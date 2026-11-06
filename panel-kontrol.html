@@ -2824,17 +2824,20 @@ function applyEoq(e) {
 }
 
 async function pushStatus() {
-  if (!REMOTE_SYNC_ENABLED || !ctlStatusRef) return;
-  try {
-    const m = window._mediaUrls || {};
-    await setDoc(ctlStatusRef, {
+  const m = window._mediaUrls || {};
+  const status = {
       heartbeat: Date.now(),
       channel: tvIndex,
       azanActive,
       autoOn: !!(window._autoOn && window._autoOn.azan),
       media: { azan: !!m.azan, sensus: !!m.sensus, ir: !!m.indonesiaRaya },
       unlocked: navigator.userActivation?.hasBeenActive ?? true
-    }, { merge: true });
+  };
+  try { displayControlChannel?.postMessage({ type: 'display-status', status }); } catch (e) {}
+  try { localStorage.setItem('lintasbenteng-display-status', JSON.stringify(status)); } catch (e) {}
+  if (!REMOTE_SYNC_ENABLED || !ctlStatusRef || !ctlAuth?.currentUser) return;
+  try {
+    await setDoc(ctlStatusRef, status, { merge: true });
   } catch (e) { console.warn('Gagal kirim status display:', e.code || e.message); }
 }
 
@@ -3522,6 +3525,7 @@ try {
 if (displayControlChannel) {
   displayControlChannel.addEventListener('message', ev => {
     const msg = ev.data || {};
+    if (msg.type === 'status-request') { pushStatus(); return; }
     if (msg.type === 'channel-select') {
       if (msg.channelObj && msg.index >= TV_CHANNELS.length) {
         TV_CHANNELS[msg.index] = msg.channelObj;
@@ -3605,8 +3609,10 @@ function startControl() {
   onSnapshot(ctlMainRef, snap => applyControl(snap.data()),
     err => { console.warn('⚠️ [CONTROL]', err.code); ctlStarted = false; });
   pushStatus();
-  setInterval(pushStatus, 10000);
 }
+
+pushStatus();
+setInterval(pushStatus, 10000);
 
 if (REMOTE_SYNC_ENABLED && ctlAuth) {
   onAuthStateChanged(ctlAuth, user => {
