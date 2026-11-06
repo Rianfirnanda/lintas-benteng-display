@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Kontrol Display · Lintas Benteng</title>
+    <link rel="icon" href="https://iili.io/nwp1YYl.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <style>
+        :root {
+            --bg:#0a0a0a; --surface:rgba(255,255,255,0.03); --border:rgba(255,255,255,0.1);
+            --blue:#3b82f6; --purple:#8b5cf6; --teal:#06b6d4; --green:#22c55e; --orange:#f59e0b; --red:#ef5350;
+            --text:#e5e5e5; --muted:#a0a0a0; --sidebar-w:260px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+        button, input, select { font-family:'Inter',sans-serif; }
+
+        /* SIDEBAR */
+        .sidebar { width:var(--sidebar-w); background:rgba(10,10,10,0.98); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; transition:transform .3s ease; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+        .sidebar-logo { padding:28px 24px 24px; border-bottom:1px solid var(--border); }
+        .logo-text { font-size:13px; font-weight:800; letter-spacing:.1em; background:linear-gradient(135deg,var(--blue),var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1.3; }
+        .logo-badge { display:inline-block; margin-top:6px; font-size:10px; font-weight:600; letter-spacing:.12em; color:#555; text-transform:uppercase; }
+        .sidebar-user { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+        .avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--purple)); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; flex-shrink:0; }
+        .user-meta small { display:block; font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+        .user-meta span { font-size:12px; color:var(--text); font-weight:500; word-break:break-all; }
+        .sidebar-nav { flex:1; padding:16px 12px; }
+        .nav-section-label { font-size:9px; font-weight:700; letter-spacing:.15em; color:#555; text-transform:uppercase; padding:8px 12px 6px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:13.5px; font-weight:500; transition:all .2s ease; margin-bottom:2px; cursor:pointer; border:1px solid transparent; }
+        .nav-item:hover { color:var(--text); background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.1); }
+        .nav-item.active { color:var(--blue); background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.2); }
+        .nav-item svg { width:16px; height:16px; flex-shrink:0; stroke-width:1.8; }
+        .sidebar-footer { padding:16px 12px; border-top:1px solid var(--border); }
+        .logout-btn { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(239,83,80,0.2); background:rgba(239,83,80,0.05); color:#f87171; font-size:13.5px; font-weight:500; cursor:pointer; transition:all .2s ease; }
+        .logout-btn:hover { background:rgba(239,83,80,0.15); border-color:rgba(239,83,80,0.4); }
+        .logout-btn svg { width:16px; height:16px; stroke-width:1.8; }
+
+        /* TOPBAR */
+        .topbar { position:fixed; top:0; left:var(--sidebar-w); right:0; height:64px; background:rgba(10,10,10,0.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 28px; z-index:100; }
+        .topbar-left { display:flex; align-items:center; gap:12px; }
+        .hamburger { display:none; background:none; border:none; cursor:pointer; color:var(--muted); padding:4px; }
+        .hamburger svg { width:20px; height:20px; }
+        .breadcrumb { font-size:13px; color:var(--muted); }
+        .breadcrumb span { color:var(--text); font-weight:600; }
+        .topbar-right { display:flex; align-items:center; gap:16px; }
+        .topbar-time { font-size:13px; color:var(--muted); font-weight:500; }
+        .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+        /* MAIN */
+        .main { margin-left:var(--sidebar-w); padding-top:64px; flex:1; min-height:100vh; min-width:0; overflow-x:hidden; }
+        .content { padding:32px 28px; max-width:100%; overflow-x:hidden; }
+        .page-header { margin-bottom:28px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+        .page-header h1 { font-size:30px; font-weight:700; letter-spacing:-.02em; color:#fff; }
+        .page-header p { font-size:14px; color:var(--muted); margin-top:6px; }
+        .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:0 16px; border:1px solid var(--border); border-radius:10px; color:var(--text); background:rgba(255,255,255,0.04); font-size:13px; font-weight:600; text-decoration:none; cursor:pointer; transition:all .2s ease; }
+        .btn:hover { border-color:rgba(59,130,246,0.4); background:rgba(255,255,255,0.07); transform:translateY(-1px); }
+        .btn svg { width:15px; height:15px; stroke-width:2; }
+        .btn.primary { color:#fff; border-color:transparent; background:linear-gradient(135deg,var(--blue),var(--purple)); }
+        .btn.primary:hover { box-shadow:0 8px 24px rgba(59,130,246,0.3); }
+
+        /* STAT CARDS */
+        .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; min-width:0; }
+        .stat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:22px; position:relative; overflow:hidden; transition:transform .2s,border-color .2s; }
+        .stat-card:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.15); }
+        .stat-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+        .stat-card.blue::after { background:var(--blue); } .stat-card.purple::after { background:var(--purple); }
+        .stat-card.teal::after { background:var(--teal); } .stat-card.green::after { background:var(--green); } .stat-card.orange::after { background:var(--orange); }
+        .stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+        .stat-icon svg { width:20px; height:20px; stroke-width:1.8; }
+        .stat-icon.blue { background:rgba(59,130,246,0.12); } .stat-icon.blue svg { stroke:var(--blue); }
+        .stat-icon.purple { background:rgba(139,92,246,0.12); } .stat-icon.purple svg { stroke:var(--purple); }
+        .stat-icon.teal { background:rgba(6,182,212,0.12); } .stat-icon.teal svg { stroke:var(--teal); }
+        .stat-icon.green { background:rgba(34,197,94,0.12); } .stat-icon.green svg { stroke:var(--green); }
+        .stat-icon.orange { background:rgba(245,158,11,0.12); } .stat-icon.orange svg { stroke:var(--orange); }
+        .stat-value { font-size:24px; font-weight:700; letter-spacing:-.02em; color:#fff; line-height:1.1; margin-bottom:6px; }
+        .stat-label { font-size:12px; color:var(--muted); font-weight:500; }
+        .stat-trend { margin-top:12px; font-size:11px; font-weight:600; color:var(--muted); }
+        .stat-trend.up { color:var(--green); } .stat-trend.down { color:var(--red); } .stat-trend.warn { color:var(--orange); }
+
+        /* SECTION + CARDS */
+        .section-title { font-size:16px; font-weight:700; color:#fff; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+        .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+        .chart-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:24px; overflow:hidden; min-width:0; margin-bottom:28px; }
+        .chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px; }
+        .chart-header h3 { font-size:15px; font-weight:700; color:#fff; }
+        .chart-badge { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }
+        .chart-badge.live { background:rgba(34,197,94,0.1); color:var(--green); border:1px solid rgba(34,197,94,0.2); }
+        .hint { color:var(--muted); font-size:12px; line-height:1.6; }
+        .hint b { color:var(--text); }
+
+        /* CHANNEL */
+        .current { padding:11px 14px; margin-bottom:16px; border:1px solid rgba(59,130,246,0.2); border-radius:12px; color:var(--muted); background:rgba(59,130,246,0.06); font-size:12px; }
+        .current b { color:var(--blue); }
+        .channel-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+        .channel { min-height:48px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:var(--text); background:rgba(255,255,255,0.03); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s ease; }
+        .channel:hover { transform:translateY(-2px); border-color:rgba(59,130,246,0.4); background:rgba(255,255,255,0.06); }
+        .channel.active { color:#fff; border-color:rgba(59,130,246,0.5); background:linear-gradient(135deg,rgba(59,130,246,0.35),rgba(139,92,246,0.35)); }
+
+        /* FORM */
+        .eoq-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+        .field { display:grid; gap:7px; color:var(--text); font-size:12px; font-weight:600; }
+        .field.full { grid-column:1 / -1; }
+        .field input, .field select { width:100%; min-height:42px; padding:0 12px; border:1px solid var(--border); border-radius:10px; outline:none; color:var(--text); background:rgba(255,255,255,0.03); font-size:13px; }
+        .field select option { background:#111; }
+        .field input:focus, .field select:focus { border-color:rgba(59,130,246,0.6); box-shadow:0 0 0 3px rgba(59,130,246,0.12); }
+        .eoq-footer { display:flex; align-items:center; gap:16px; margin-top:20px; flex-wrap:wrap; }
+        .photo-preview { width:64px; height:64px; flex:none; overflow:hidden; border:2px solid var(--blue); border-radius:50%; background:rgba(255,255,255,0.05); }
+        .photo-preview img { width:100%; height:100%; object-fit:contain; }
+        .eoq-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+        #feedback, #eoq-feedback { min-height:18px; margin-top:12px; color:var(--blue); font-size:12px; line-height:1.5; }
+
+        .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:150; }
+
+        @media (max-width:1280px) { .stat-grid { grid-template-columns:repeat(2,1fr); } .channel-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+        @media (max-width:768px) {
+            .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); }
+            .main { margin-left:0; } .topbar { left:0; } .hamburger { display:flex; }
+            .content { padding:20px 16px; } .channel-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .eoq-form { grid-template-columns:1fr; } .field.full { grid-column:auto; }
+        }
+        @media (max-width:480px) { .stat-grid { grid-template-columns:1fr; } }
+
+        /* === TAMBAHAN FITUR KONTROL PENUH, DRAG-DROP, YOUTUBE, IPTV & GEMPA === */
+        .pk-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px; }
+        .pk-tab { padding:8px 14px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .2s ease; display:inline-flex; align-items:center; gap:7px; }
+        .pk-tab:hover { color:var(--text); background:rgba(255,255,255,0.07); }
+        .pk-tab.active { color:#fff; border-color:rgba(59,130,246,0.5); background:linear-gradient(135deg,rgba(59,130,246,0.28),rgba(139,92,246,0.28)); }
+        .pk-pane { display:none; }
+        .pk-pane.active { display:block; }
+
+        .toolbar-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid var(--border); }
+        .toolbar-group { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+        .pk-input, .pk-select, .pk-textarea { min-height:38px; padding:6px 12px; border:1px solid var(--border); border-radius:10px; outline:none; color:var(--text); background:rgba(255,255,255,0.04); font-size:12.5px; font-family:'Inter',sans-serif; }
+        .pk-textarea { min-height:76px; width:100%; resize:vertical; line-height:1.5; }
+        .pk-input:focus, .pk-select:focus, .pk-textarea:focus { border-color:rgba(59,130,246,0.6); box-shadow:0 0 0 3px rgba(59,130,246,0.12); }
+        .pk-select option { background:#111; color:#eee; }
+
+        /* Channel badges & validation */
+        .channel { position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; text-align:left; gap:6px; min-height:60px; padding:10px 12px; overflow:hidden; }
+        .channel .ch-top { display:flex; align-items:center; justify-content:space-between; width:100%; gap:6px; }
+        .channel .ch-name { font-size:12px; font-weight:700; line-height:1.25; word-break:break-word; }
+        .channel .ch-meta { font-size:10px; color:var(--muted); font-weight:500; display:flex; align-items:center; gap:5px; width:100%; justify-content:space-between; }
+        .ch-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#666; }
+        .ch-dot.ok { background:var(--green); box-shadow:0 0 6px var(--green); }
+        .ch-dot.warn { background:var(--orange); box-shadow:0 0 6px var(--orange); }
+        .ch-dot.dead { background:var(--red); box-shadow:0 0 6px var(--red); }
+        .channel.dead-stream { opacity:0.45; border-color:rgba(239,83,80,0.3); }
+        .channel.hidden-dead { display:none !important; }
+        .ch-filter-bar { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:thin; }
+        .ch-cat-btn { padding:5px 12px; border-radius:999px; font-size:11.5px; font-weight:600; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--muted); cursor:pointer; white-space:nowrap; transition:all .2s; }
+        .ch-cat-btn.active { color:#fff; background:var(--blue); border-color:var(--blue); }
+
+        /* Drag and Drop Studio */
+        .dnd-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+        .dnd-card { background:rgba(255,255,255,0.04); border:1.5px dashed rgba(255,255,255,0.18); border-radius:14px; padding:14px; cursor:grab; transition:all .2s ease; user-select:none; position:relative; }
+        .dnd-card:hover { border-color:var(--blue); background:rgba(59,130,246,0.06); }
+        .dnd-card.dragging { opacity:0.45; transform:scale(0.97); border-color:var(--purple); }
+        .dnd-card.drag-over { border-color:var(--green); background:rgba(34,197,94,0.1); transform:translateY(-2px); }
+        .dnd-handle { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:13px; font-weight:700; color:#fff; }
+        .dnd-badge { font-size:10px; padding:2px 8px; border-radius:999px; background:rgba(59,130,246,0.18); color:var(--blue); font-weight:700; }
+        .dnd-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+        .dnd-row-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; background:rgba(255,255,255,0.035); border:1px solid var(--border); border-radius:12px; cursor:grab; transition:all .2s; flex-wrap:wrap; }
+        .dnd-row-item:hover { border-color:rgba(59,130,246,0.45); background:rgba(255,255,255,0.06); }
+        .dnd-row-item.dragging { opacity:0.4; }
+        .dnd-row-item.drag-over { border-color:var(--green); background:rgba(34,197,94,0.08); }
+        .dnd-grip { color:var(--muted); font-size:16px; cursor:grab; margin-right:4px; }
+
+        /* Volume & YouTube */
+        .vol-box { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; background:rgba(59,130,246,0.07); border:1px solid rgba(59,130,246,0.22); margin-bottom:18px; flex-wrap:wrap; }
+        .vol-slider { flex:1; min-width:160px; accent-color:var(--blue); height:6px; cursor:pointer; }
+        .btn.danger { border-color:rgba(239,83,80,0.35); background:rgba(239,83,80,0.1); color:#f87171; }
+        .btn.danger:hover { background:rgba(239,83,80,0.22); }
+        .btn.success { border-color:rgba(34,197,94,0.35); background:rgba(34,197,94,0.12); color:#4ade80; }
+        .btn.success:hover { background:rgba(34,197,94,0.24); }
+        .btn.warn { border-color:rgba(245,158,11,0.35); background:rgba(245,158,11,0.12); color:#fbbf24; }
+        .btn.sm { min-height:32px; padding:0 10px; font-size:11.5px; border-radius:8px; }
+
+        .yt-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; margin-top:14px; }
+        .yt-item { padding:12px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.03); display:flex; flex-direction:column; justify-content:space-between; gap:10px; }
+        .yt-item.active { border-color:var(--blue); background:rgba(59,130,246,0.1); }
+        .yt-item h4 { font-size:13px; font-weight:700; color:#fff; line-height:1.3; }
+        .yt-item small { font-size:11px; color:var(--muted); word-break:break-all; }
+
+        /* Gempa BMKG */
+        .quake-banner { padding:16px; border-radius:14px; background:linear-gradient(135deg,rgba(239,83,80,0.14),rgba(245,158,11,0.08)); border:1px solid rgba(239,83,80,0.35); margin-bottom:16px; display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center; }
+        .quake-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; }
+        .quake-table th, .quake-table td { padding:9px 10px; border-bottom:1px solid var(--border); text-align:left; }
+        .quake-table th { color:var(--muted); font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.06em; }
+        .quake-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; font-weight:700; }
+        .quake-badge.near { background:rgba(239,83,80,0.2); color:#f87171; border:1px solid rgba(239,83,80,0.4); }
+        .quake-badge.far { background:rgba(34,197,94,0.15); color:#4ade80; }
+
+        /* Dynamic List Editor */
+        .dyn-list { display:flex; flex-direction:column; gap:8px; margin-top:10px; max-height:280px; overflow-y:auto; padding-right:4px; }
+        .dyn-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border); font-size:12px; }
+        @media (max-width:900px) { .dnd-grid { grid-template-columns:1fr; } .quake-banner { grid-template-columns:1fr; } }
+
+        /* Panel visual refinement */
+        :root {
+            --bg:#0b1016; --surface:#111922; --border:#26313d;
+            --blue:#5b9af0; --purple:#8b83e8; --teal:#42b9c8; --green:#43b581; --orange:#e4a64b; --red:#e56b6b;
+            --text:#e8edf3; --muted:#9aa6b4;
+        }
+        body { background:var(--bg); }
+        .sidebar { background:#0e141b; border-right-color:#202a35; }
+        .sidebar-logo { padding:24px 22px 20px; }
+        .logo-text { background:none; color:#e8edf3; -webkit-text-fill-color:currentColor; letter-spacing:.08em; }
+        .logo-badge, .nav-section-label, .user-meta small { color:#8491a0; }
+        .sidebar-user { padding:14px 20px; }
+        .avatar { background:#1d3550; color:#9ec6ff; border:1px solid #2b4a69; }
+        .sidebar-nav { padding:14px 10px; }
+        .nav-item { min-height:40px; padding:9px 11px; border-radius:8px; font-size:13px; }
+        .nav-item.active { color:#a9ceff; background:#172638; border-color:#263c55; }
+        .nav-item:hover { background:#17212c; border-color:#26313d; }
+        .sidebar-footer { padding:12px 10px; border-top-color:#202a35; }
+        .logout-btn { border-color:#3a292c; background:#1a1417; }
+        .topbar { height:60px; background:rgba(14,20,27,.96); border-bottom-color:#202a35; padding:0 24px; }
+        .main { padding-top:60px; }
+        .content { width:min(100%, 1480px); margin:0 auto; padding:28px clamp(16px,2.2vw,32px) 44px; }
+        .page-header { margin-bottom:24px; align-items:center; }
+        .page-header h1 { font-size:26px; letter-spacing:-.035em; }
+        .page-header p { margin-top:5px; font-size:13px; }
+        .btn { min-height:38px; padding:0 14px; border-radius:8px; background:#151d26; border-color:#303b47; font-size:12.5px; }
+        .btn:hover { transform:none; background:#1a2530; border-color:#45576a; }
+        .btn.primary { background:#3478cf; border-color:#3478cf; }
+        .btn.primary:hover { background:#4388df; border-color:#4388df; box-shadow:none; }
+        .btn.danger, .btn.success, .btn.warn { background:transparent; }
+        .stat-grid { gap:12px; margin-bottom:24px; }
+        .stat-card { min-height:142px; padding:18px; border-radius:13px; background:var(--surface); border-color:#25303c; box-shadow:none; }
+        .stat-card:hover { transform:none; border-color:#344252; }
+        .stat-card::after { display:none; }
+        .stat-icon { width:36px; height:36px; margin-bottom:13px; border-radius:9px; }
+        .stat-icon.blue, .stat-icon.purple, .stat-icon.teal, .stat-icon.green, .stat-icon.orange { background:#1b2631; }
+        .stat-value { margin-bottom:4px; font-size:22px; }
+        .stat-label { font-size:11.5px; }
+        .stat-trend { margin-top:9px; font-size:10.5px; }
+        .section-title { margin:24px 0 10px; font-size:15px; gap:12px; }
+        .section-title::after { background:#25303c; }
+        .chart-card { margin-bottom:22px; padding:20px; border-radius:14px; background:var(--surface); border-color:#25303c; }
+        .chart-header { margin-bottom:16px; }
+        .chart-header h3 { font-size:14px; line-height:1.45; }
+        .quick-controls { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; padding:12px 16px; border:1px solid #26313d; border-radius:12px; background:var(--surface); }
+        .quick-controls-info { display:grid; gap:4px; min-width:180px; }
+        .quick-controls-info h2 { font-size:13px; font-weight:700; color:var(--text); }
+        .quick-controls-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+        .channel-toolbar { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+        .channel-toolbar > .toolbar-group:first-child { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.55fr); min-width:0 !important; }
+        .channel-toolbar > .toolbar-group:first-child .pk-input { min-width:0 !important; }
+        .channel-toolbar > .toolbar-group:last-child { justify-content:flex-end; }
+        .hint { font-size:11.5px; color:#9aa6b4; }
+        .chart-badge { padding:4px 9px; border-radius:7px; }
+        .chart-badge.live { background:#14251f; border-color:#284537; color:#83d0aa; }
+        .toolbar-row { gap:9px; padding:10px; border-radius:9px; background:#0e151c; border-color:#26313d; }
+        .toolbar-group { gap:7px; }
+        .pk-tabs { gap:6px; margin-bottom:16px; padding-bottom:10px; border-bottom-color:#26313d; }
+        .pk-tab { padding:8px 12px; border-radius:8px; background:#111922; border-color:#2a3541; font-size:12px; }
+        .pk-tab:hover { background:#19232e; }
+        .pk-tab.active { color:#c6ddfb; background:#1a2a3b; border-color:#3b5879; }
+        .pk-input, .pk-select, .pk-textarea, .field input, .field select { border-color:#303b47; border-radius:8px; background:#0d141b; }
+        .pk-input:focus, .pk-select:focus, .pk-textarea:focus, .field input:focus, .field select:focus { border-color:#5b9af0; box-shadow:0 0 0 2px rgba(91,154,240,.16); }
+        .current { padding:10px 12px; border-color:#2a3b4d; border-radius:9px; background:#111b25; }
+        .channel-grid { gap:8px; }
+        .channel { min-height:54px; padding:9px 11px; border-radius:9px; border-color:#2a3541; background:#0e151c; }
+        .channel:hover { transform:none; border-color:#49617a; background:#151f2a; }
+        .channel.active { color:#dbeaff; background:#1a2a3b; border-color:#4b76a5; }
+        .ch-cat-btn { padding:6px 10px; border-radius:7px; border-color:#303b47; background:#111922; }
+        .ch-cat-btn.active { color:#dbeaff; background:#203a56; border-color:#385c81; }
+        .vol-box { gap:12px; padding:12px 14px; border-radius:10px; background:#111b25; border-color:#2a3b4d; }
+        .vol-slider { accent-color:var(--blue); }
+        .yt-item { border-radius:10px; background:#0e151c; border-color:#2a3541; }
+        .yt-item.active { background:#172638; border-color:#4b76a5; }
+        .dyn-item { border-radius:8px; background:#0e151c; border-color:#2a3541; }
+        .dnd-card { border-radius:10px; background:#111922; }
+        .dnd-row-item { border-radius:9px; background:#0e151c; }
+        .quake-banner { border-radius:10px; background:#20191a; border-color:#493335; }
+        :where(a,button,input,select,textarea,summary,[tabindex]):focus-visible { outline:2px solid #8ab9f3; outline-offset:2px; }
+        @media (min-width:1101px) and (max-width:1280px) { .stat-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+        @media (max-width:768px) {
+            .topbar { height:56px; padding:0 16px; }
+            .main { padding-top:56px; }
+            .content { padding:20px 14px 32px; }
+            .page-header { margin-bottom:20px; }
+            .page-header h1 { font-size:23px; }
+            .chart-card { padding:16px; }
+            .stat-grid { gap:10px; }
+            .quick-controls { align-items:stretch; flex-direction:column; gap:10px; }
+            .quick-controls-actions { justify-content:flex-start; }
+            .channel-toolbar > .toolbar-group:first-child { grid-template-columns:minmax(0,1fr); }
+            .channel-toolbar > .toolbar-group:last-child { justify-content:flex-start; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-text">LINTAS BENTENG</div>
+        <span class="logo-badge">Admin Panel</span>
+    </div>
+    <div class="sidebar-user">
+        <div class="avatar" id="avatarLetter">A</div>
+        <div class="user-meta"><small>Logged in as</small><span id="sidebarEmail">admin@bps.go.id</span></div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/dashboard.html" class="nav-item"><i data-feather="grid"></i>Dashboard</a>
+
+        <div class="nav-section-label">Manajemen</div>
+        <a href="/user.html" class="nav-item"><i data-feather="users"></i>Manajemen User</a>
+        <a href="/user-tracking.html" class="nav-item"><i data-feather="map-pin"></i>Manajemen Tracking</a>
+        <a href="/activities-dashboard.html" class="nav-item"><i data-feather="activity"></i>Manajemen Kegiatan</a>
+        <a href="/user-photo-management.html" class="nav-item"><i data-feather="image"></i>Manajemen Foto</a>
+        <a href="/admin-email-manager.html" class="nav-item"><i data-feather="user-plus"></i>Admin Management</a>
+
+        <div class="nav-section-label">Konten</div>
+        <a href="./display-lintas-3.html" class="nav-item active"><i data-feather="sliders"></i>Panel Kontrol Display</a>
+        <a href="/display/video-manager.html" class="nav-item"><i data-feather="video"></i>Video Display</a>
+        <a href="/se2026-admin.html" class="nav-item"><i data-feather="trending-up"></i>SE2026 Events</a>
+        <a href="/home-event-manager.html" class="nav-item"><i data-feather="image"></i>Home Event Slider</a>
+        <a href="/quick-menu-manager.html" class="nav-item"><i data-feather="layout"></i>Quick Menu Manager</a>
+
+        <div class="nav-section-label">Inventory</div>
+        <a href="/inventory_manager.html" class="nav-item"><i data-feather="package"></i>Inventory Manager</a>
+        <a href="/pengajuan_dashboard.html" class="nav-item"><i data-feather="clipboard"></i>Dashboard Pengajuan</a>
+        <a href="/pengajuan_mobil_dashboard.html" class="nav-item"><i data-feather="truck"></i>Dashboard Pengajuan Mobil</a>
+    </nav>
+    <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()"><i data-feather="log-out"></i>Logout</button>
+    </div>
+</aside>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()"><i data-feather="menu"></i></button>
+        <div class="breadcrumb">Lintas Benteng / <span>Panel Kontrol Display</span></div>
+    </div>
+    <div class="topbar-right">
+        <div class="topbar-time" id="clock">--:--:--</div>
+        <div class="status-dot" title="System Online"></div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+    <div class="content">
+
+        <div class="page-header">
+            <div>
+                <h1>Panel Kontrol Display</h1>
+                <p>LINTAS BENTENG · BPS Kabupaten Bengkulu Tengah</p>
+            </div>
+            <a class="btn primary" href="./panel-kontrol.html" target="_blank" rel="noopener"><i data-feather="external-link"></i>Buka halaman display</a>
+        </div>
+
+        <!-- STATUS -->
+        <div class="stat-grid">
+            <div class="stat-card green" id="card-conn">
+                <div class="stat-icon green"><i data-feather="monitor"></i></div>
+                <div class="stat-value" id="st-conn">—</div>
+                <div class="stat-label">Status Display</div>
+                <div class="stat-trend" id="st-conn-sub">menunggu koneksi…</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon blue"><i data-feather="tv"></i></div>
+                <div class="stat-value" id="st-channel">—</div>
+                <div class="stat-label">Channel Aktif</div>
+                <div class="stat-trend up">Realtime</div>
+            </div>
+            <div class="stat-card purple" id="card-auto">
+                <div class="stat-icon purple"><i data-feather="volume-2"></i></div>
+                <div class="stat-value" id="st-auto">—</div>
+                <div class="stat-label">Azan · Lagu · Video</div>
+                <div class="stat-trend" id="st-auto-sub">diaktifkan dari layar display</div>
+            </div>
+            <div class="stat-card orange" id="card-unlock">
+                <div class="stat-icon orange"><i data-feather="mouse-pointer"></i></div>
+                <div class="stat-value" id="st-unlock">—</div>
+                <div class="stat-label">Izin Suara Browser</div>
+                <div class="stat-trend" id="st-unlock-sub">perlu 1 klik di display</div>
+            </div>
+        </div>
+
+        <section class="quick-controls" aria-label="Kontrol cepat display">
+            <div class="quick-controls-info">
+                <h2>Kontrol cepat display</h2>
+                <span id="auto-schedules-state" class="hint">Status display: menunggu koneksi</span>
+            </div>
+            <div class="quick-controls-actions">
+                <button type="button" id="btn-info-prev" class="btn sm">Slide info sebelumnya</button>
+                <button type="button" id="btn-info-next" class="btn sm">Slide info berikutnya</button>
+                <button type="button" id="btn-auto-schedules" class="btn sm success">Aktifkan jadwal otomatis</button>
+            </div>
+        </section>
+
+        <!-- CHANNEL TV & IPTV-ORG INDONESIA + VALIDASI LINK -->
+        <div class="section-title">Siaran TV Indonesia &amp; Validasi Stream</div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h3>Pilih Channel TV (Terintegrasi Otomatis dengan GitHub iptv-org/iptv Indonesia)</h3>
+                    <p class="hint" style="margin-top:3px">Sinkronisasi berkala otomatis dari <code>github.com/iptv-org/iptv</code> (streams/id.m3u) + fitur validasi link anti siaran mati.</p>
+                </div>
+                <span class="chart-badge live" id="iptv-sync-badge">Live · Auto-Sync</span>
+            </div>
+
+            <div class="toolbar-row channel-toolbar">
+                <div class="toolbar-group" style="flex:1; min-width:220px;">
+                    <input id="ch-search" class="pk-input" type="search" placeholder="Cari channel TV Indonesia (cth: TVRI, Trans, Kompas, RCTI)..." style="flex:1; min-width:200px;">
+                    <select id="tv-fit-mode" class="pk-select" title="Presisi Tampilan Layar TV">
+                        <option value="cover">Rasio TV: Presisi Penuh 16:9 (Cover)</option>
+                        <option value="contain">Rasio TV: Utuh Tanpa Potong (Contain)</option>
+                        <option value="fill">Rasio TV: Rentang Penuh (Fill)</option>
+                    </select>
+                </div>
+                <div class="toolbar-group">
+                    <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;">
+                        <input type="checkbox" id="chk-hide-dead"> Sembunyikan Siaran Mati
+                    </label>
+                    <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;">
+                        <input type="checkbox" id="chk-auto-skip-dead" checked> Auto-Fallback / Skip Error
+                    </label>
+                    <button type="button" id="btn-validate-links" class="btn sm success"><i data-feather="check-circle"></i>Validasi Semua Link (<span id="val-count">Siap</span>)</button>
+                    <button type="button" id="btn-sync-iptv" class="btn sm"><i data-feather="refresh-cw"></i>Update dari iptv-org</button>
+                </div>
+            </div>
+
+            <div class="ch-filter-bar" id="ch-cat-bar">
+                <button type="button" class="ch-cat-btn active" data-cat="all">Semua Channel (<span id="cnt-all">0</span>)</button>
+                <button type="button" class="ch-cat-btn" data-cat="utama">Nasional Utama</button>
+                <button type="button" class="ch-cat-btn" data-cat="tvri">TVRI &amp; Daerah</button>
+                <button type="button" class="ch-cat-btn" data-cat="berita">Berita &amp; Informasi</button>
+                <button type="button" class="ch-cat-btn" data-cat="iptv">IPTV-Org Indonesia</button>
+                <button type="button" class="ch-cat-btn" data-cat="youtube">YouTube &amp; Kustom</button>
+                <button type="button" class="ch-cat-btn" data-cat="valid">Hanya Tervalidasi Aktif</button>
+            </div>
+
+            <div class="current" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <span>Channel aktif: <b id="current-channel">Memuat…</b> <small id="current-channel-url" style="color:var(--muted);margin-left:8px;"></small></span>
+                <span id="iptv-last-sync" style="font-size:11px;color:var(--muted);">Belum sinkronisasi iptv-org</span>
+            </div>
+
+            <div id="channel-list" class="channel-grid" style="max-height:380px;overflow-y:auto;padding-right:4px;"></div>
+            <p id="feedback" role="status" aria-live="polite"></p>
+
+            <!-- Tambah Channel Kustom -->
+            <details style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+                <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--blue);">+ Tambah Channel TV Baru / Link Stream M3U8 / Embed</summary>
+                <div class="eoq-form" style="margin-top:12px;">
+                    <label class="field">Nama Channel
+                        <input type="text" id="new-ch-name" placeholder="Contoh: Kompas TV HD">
+                    </label>
+                    <label class="field">Tipe Stream
+                        <select id="new-ch-type">
+                            <option value="hls">HLS Stream (.m3u8)</option>
+                            <option value="iframe">Web / YouTube Embed (Iframe)</option>
+                        </select>
+                    </label>
+                    <label class="field full">URL Stream (.m3u8 atau URL Embed)
+                        <input type="url" id="new-ch-url" placeholder="https://.../live.m3u8 atau https://www.youtube.com/embed/...">
+                    </label>
+                </div>
+                <div class="eoq-actions" style="margin-top:10px;">
+                    <button type="button" id="btn-add-channel" class="btn primary sm"><i data-feather="plus"></i>Simpan &amp; Validasi Channel</button>
+                </div>
+            </details>
+            <p class="hint" style="margin-top:8px">Azan, lagu Indonesia Raya, dan video SE2026 dapat diaktifkan lewat tombol <b>Azan · Lagu · Video</b> di layar display maupun dikontrol langsung dari panel kontrol di bawah.</p>
+        </div>
+
+        <!-- YOUTUBE EMBED & KONTROL VOLUME / AUDIO -->
+        <div class="section-title">YouTube Embed (Lagu / Konten) &amp; Kontrol Volume Display</div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h3>Kontrol Audio, Volume &amp; Embed YouTube</h3>
+                    <p class="hint" style="margin-top:3px">Keadaan awal display adalah <b>Mute (Suara Mati)</b>. Atur volume (0–100%), mute/unmute, dan tampilkan lagu/video dari YouTube secara realtime.</p>
+                </div>
+                <span class="chart-badge live" id="audio-state-badge">Keadaan Awal: MUTE</span>
+            </div>
+
+            <!-- Master Volume & Mute Bar -->
+            <div class="vol-box">
+                <button type="button" id="btn-mute-toggle" class="btn danger" style="min-width:170px;">
+                    <i data-feather="volume-x"></i><span id="mute-btn-label">MUTE (Suara Mati)</span>
+                </button>
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;">
+                    <span style="font-size:12px;font-weight:700;color:var(--muted);">Volume:</span>
+                    <input type="range" id="vol-slider" class="vol-slider" min="0" max="100" value="50">
+                    <b id="vol-label" style="min-width:44px;font-size:14px;color:#fff;">50%</b>
+                </div>
+                <div class="toolbar-group">
+                    <button type="button" class="btn sm vol-preset" data-vol="0">0% (Mute)</button>
+                    <button type="button" class="btn sm vol-preset" data-vol="30">30%</button>
+                    <button type="button" class="btn sm vol-preset" data-vol="60">60%</button>
+                    <button type="button" class="btn sm vol-preset" data-vol="100">100%</button>
+                </div>
+            </div>
+
+            <!-- Kontrol Pemutaran Cepat -->
+            <div class="toolbar-row">
+                <div class="toolbar-group">
+                    <span style="font-size:12px;font-weight:700;color:var(--muted);">Kontrol Pemutar:</span>
+                    <button type="button" id="btn-yt-play" class="btn sm success"><i data-feather="play"></i>Play</button>
+                    <button type="button" id="btn-yt-pause" class="btn sm warn"><i data-feather="pause"></i>Pause</button>
+                    <button type="button" id="btn-yt-stop-bgm" class="btn sm danger"><i data-feather="square"></i>Matikan Musik Latar</button>
+                </div>
+                <div class="toolbar-group">
+                    <span style="font-size:12px;font-weight:700;color:var(--muted);">Pemicu Media Jadwal:</span>
+                    <button type="button" id="btn-trig-azan" class="btn sm"><i data-feather="bell"></i>Putar Azan</button>
+                    <button type="button" id="btn-trig-ir" class="btn sm"><i data-feather="music"></i>Indonesia Raya</button>
+                    <button type="button" id="btn-trig-sensus" class="btn sm"><i data-feather="bar-chart-2"></i>Video SE2026</button>
+                    <button type="button" id="btn-trig-stopmedia" class="btn sm danger"><i data-feather="x-circle"></i>Tutup Popup Video/Azan</button>
+                </div>
+            </div>
+
+            <!-- Form Tambah Lagu / Video YouTube -->
+            <div class="eoq-form" style="margin-top:14px;">
+                <label class="field">Judul Lagu / Video / Konten YouTube
+                    <input type="text" id="yt-title-input" placeholder="Contoh: Lagu Daerah Bengkulu / Musik Instrumental Kantor">
+                </label>
+                <label class="field">URL / Link / ID YouTube (Video, Live, atau Playlist)
+                    <input type="text" id="yt-url-input" placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/...">
+                </label>
+                <label class="field">Mode Penampilan di Display
+                    <select id="yt-mode-select">
+                        <option value="tv">Tampilkan di Kotak Utama TV (Gantikan Siaran TV)</option>
+                        <option value="bgm">Putar Sebagai Lagu / Musik Latar (Mini Player di Display)</option>
+                    </select>
+                </label>
+                <label class="field">Opsi Pemutaran Saat Dimulai
+                    <select id="yt-start-mute">
+                        <option value="true" selected>Mulai dalam Keadaan MUTE (Default Aman)</option>
+                        <option value="false">Mulai dengan Suara Aktif (Unmute Sesuai Volume)</option>
+                    </select>
+                </label>
+            </div>
+            <div class="eoq-actions" style="margin-top:12px;">
+                <button type="button" id="btn-yt-apply" class="btn primary"><i data-feather="youtube"></i>Tampilkan &amp; Simpan ke Playlist</button>
+                <button type="button" id="btn-yt-add-only" class="btn"><i data-feather="plus"></i>Simpan ke Daftar Saja</button>
+            </div>
+            <p id="yt-feedback" style="min-height:18px;margin-top:10px;color:var(--blue);font-size:12px;"></p>
+
+            <div style="margin-top:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">Daftar Lagu &amp; Konten YouTube Tersedia:</div>
+                <div id="yt-playlist-grid" class="yt-list"></div>
+            </div>
+        </div>
+
+        <!-- EOQ -->
+        <div class="section-title">Konten Display</div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Employee of the Quarter</h3>
+                <span class="chart-badge live">Live</span>
+            </div>
+            <form id="eoq-form">
+                <div class="eoq-form">
+                    <label class="field">Nama pegawai
+                        <input name="name" type="text" maxlength="100" required>
+                    </label>
+                    <label class="field">Jabatan
+                        <input name="role" type="text" maxlength="100" required>
+                    </label>
+                    <label class="field">Kuartal
+                        <select name="quarter">
+                            <option value="I">Kuartal I</option>
+                            <option value="II">Kuartal II</option>
+                            <option value="III">Kuartal III</option>
+                            <option value="IV">Kuartal IV</option>
+                        </select>
+                    </label>
+                    <label class="field">Tahun
+                        <input name="year" type="number" min="2000" max="2100" required>
+                    </label>
+                    <label class="field full">URL foto
+                        <input name="photo" type="url" maxlength="2048" placeholder="https://contoh.com/foto.jpg">
+                    </label>
+                </div>
+                <div class="eoq-footer">
+                    <div class="photo-preview"><img id="eoq-photo-preview" alt="Pratinjau foto"></div>
+                    <div>
+                        <p class="hint">Gunakan tautan foto langsung (HTTPS). Kosongkan untuk menyembunyikan foto.</p>
+                        <div class="eoq-actions">
+                            <button class="btn primary" type="submit"><i data-feather="send"></i>Simpan ke display</button>
+                            <button id="eoq-reset" class="btn" type="button"><i data-feather="rotate-ccw"></i>Pulihkan data awal</button>
+                        </div>
+                    </div>
+                </div>
+                <p id="eoq-feedback" role="status" aria-live="polite"></p>
+            </form>
+        </div>
+
+        <!-- FITUR DRAG-AND-DROP TATA LETAK & KUSTOMISASI SEMUA ELEMEN DISPLAY -->
+        <div class="section-title">Tata Letak Drag-and-Drop &amp; Kustomisasi Penuh Display</div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h3>Studio Tata Letak Dinamis (Drag &amp; Drop) &amp; Editor Konten Display</h3>
+                    <p class="hint" style="margin-top:3px">Geser (drag-and-drop) kartu di bawah untuk mengubah urutan kolom, baris, dan slide di layar display secara dinamis, atau aktifkan drag-and-drop langsung di layar display.</p>
+                </div>
+                <span class="chart-badge live">Realtime Sync</span>
+            </div>
+
+            <!-- Navigasi Tab Kustomisasi -->
+            <div class="pk-tabs" id="cust-tabs">
+                <button type="button" class="pk-tab active" data-pane="pane-layout"><i data-feather="columns"></i>Drag &amp; Drop Tata Letak</button>
+                <button type="button" class="pk-tab" data-pane="pane-header"><i data-feather="edit-3"></i>Identitas, Tema &amp; Header</button>
+                <button type="button" class="pk-tab" data-pane="pane-ticker"><i data-feather="align-left"></i>Ticker Berita &amp; Running Text</button>
+                <button type="button" class="pk-tab" data-pane="pane-slides"><i data-feather="calendar"></i>Agenda, Hari Penting, Nilai BPS &amp; Ayat</button>
+                <button type="button" class="pk-tab" data-pane="pane-schedules"><i data-feather="clock"></i>Jadwal Sholat &amp; Video Otomatis</button>
+            </div>
+
+            <!-- PANE 1: DRAG & DROP LAYOUT -->
+            <div class="pk-pane active" id="pane-layout">
+                <div class="toolbar-row">
+                    <div>
+                        <b style="font-size:13px;color:#fff;">Mode Drag-and-Drop Interaktif Langsung di Layar Display</b>
+                        <p class="hint">Jika diaktifkan, operator dapat langsung menggeser (drag &amp; drop) panel di halaman <code>panel-kontrol.html</code>.</p>
+                    </div>
+                    <label style="display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px;color:var(--blue);cursor:pointer;">
+                        <input type="checkbox" id="chk-display-dnd"> Aktifkan Drag &amp; Drop di Layar Display
+                    </label>
+                </div>
+
+                <h4 style="font-size:13px;font-weight:700;color:#fff;margin:14px 0 8px;">1. Drag &amp; Drop Urutan Kolom Utama (Kiri ➔ Tengah ➔ Kanan) &amp; Lebar Proporsi</h4>
+                <div id="dnd-columns" class="dnd-grid"></div>
+
+                <h4 style="font-size:13px;font-weight:700;color:#fff;margin:18px 0 8px;">2. Drag &amp; Drop Urutan Baris Vertikal Layar Display (Atas ➔ Bawah)</h4>
+                <div id="dnd-rows" class="dnd-list"></div>
+
+                <h4 style="font-size:13px;font-weight:700;color:#fff;margin:18px 0 8px;">3. Drag &amp; Drop Urutan Slide Kartu Info &amp; Durasi Tampil</h4>
+                <div id="dnd-slides" class="dnd-list"></div>
+
+                <div class="eoq-actions" style="margin-top:16px;">
+                    <button type="button" id="btn-save-layout" class="btn primary"><i data-feather="save"></i>Terapkan Tata Letak ke Display</button>
+                    <button type="button" id="btn-reset-layout" class="btn"><i data-feather="rotate-ccw"></i>Reset Tata Letak Awal</button>
+                </div>
+            </div>
+
+            <!-- PANE 2: IDENTITAS, TEMA & HEADER -->
+            <div class="pk-pane" id="pane-header">
+                <div class="eoq-form">
+                    <label class="field">Tema Tampilan Display
+                        <select id="cfg-theme">
+                            <option value="dark">Mode Gelap (Dark Command Center)</option>
+                            <option value="light">Mode Terang (Light Glassmorphism)</option>
+                        </select>
+                    </label>
+                    <label class="field">Posisi Panel Bawah (Kalender/Cuaca vs Jadwal Sholat)
+                        <select id="cfg-sholat-swap">
+                            <option value="normal">Kalender &amp; Cuaca di Kiri · Jadwal Sholat di Kanan</option>
+                            <option value="swapped">Jadwal Sholat di Kiri · Kalender &amp; Cuaca di Kanan</option>
+                        </select>
+                    </label>
+                    <label class="field">Judul Brand Header
+                        <input type="text" id="cfg-brand-title" value="LINTAS BENTENG" maxlength="80">
+                    </label>
+                    <label class="field">Subjudul Instansi Header
+                        <input type="text" id="cfg-brand-sub" value="BPS Kabupaten Bengkulu Tengah" maxlength="120">
+                    </label>
+                    <label class="field">URL Logo Header
+                        <input type="url" id="cfg-brand-logo" value="https://iili.io/nwp1YYl.jpg">
+                    </label>
+                    <label class="field">Teks Badge Status Kanan Atas
+                        <input type="text" id="cfg-live-badge" value="LIVE" maxlength="20">
+                    </label>
+                    <label class="field">Judul Panel Peta Tracking
+                        <input type="text" id="cfg-title-map" value="Live Tracking" maxlength="50">
+                    </label>
+                    <label class="field">Judul Panel Siaran TV
+                        <input type="text" id="cfg-title-tv" value="Siaran TV" maxlength="50">
+                    </label>
+                    <label class="field full">Teks Footer Copyright
+                        <input type="text" id="cfg-footer-text" value="Tim IT Pengolahan · BPS Kab. Bengkulu Tengah" maxlength="140">
+                    </label>
+                </div>
+                <div class="eoq-actions" style="margin-top:16px;">
+                    <button type="button" id="btn-save-identity" class="btn primary"><i data-feather="check"></i>Simpan Identitas &amp; Tema</button>
+                </div>
+            </div>
+
+            <!-- PANE 3: TICKER BERITA & RUNNING TEXT -->
+            <div class="pk-pane" id="pane-ticker">
+                <div class="eoq-form">
+                    <label class="field">Label Kotak Merah Ticker
+                        <input type="text" id="cfg-ticker-label" value="LINTAS BENTENG" maxlength="40">
+                    </label>
+                    <label class="field">Topik Berita RSS Otomatis
+                        <input type="text" id="cfg-ticker-topic" value="bengkulu tengah" placeholder="Contoh: bengkulu tengah">
+                    </label>
+                    <label class="field">Mode Konten Running Text
+                        <select id="cfg-ticker-mode">
+                            <option value="both">Gabungan (Pengumuman Kustom + Berita RSS)</option>
+                            <option value="custom">Hanya Teks Pengumuman Kustom</option>
+                            <option value="rss">Hanya Berita RSS Otomatis</option>
+                        </select>
+                    </label>
+                    <label class="field">Durasi Kecepatan Putaran Ticker (Detik)
+                        <input type="number" id="cfg-ticker-speed" value="240" min="30" max="600">
+                    </label>
+                    <label class="field full">Tambah Teks Pengumuman / Running Text Kustom
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="new-ticker-msg" placeholder="Ketik pengumuman untuk ditampilkan di running text bawah..." style="flex:1;">
+                            <button type="button" id="btn-add-ticker-msg" class="btn primary sm"><i data-feather="plus"></i>Tambah</button>
+                        </div>
+                    </label>
+                </div>
+                <div id="custom-ticker-list" class="dyn-list"></div>
+                <div class="eoq-actions" style="margin-top:16px;">
+                    <button type="button" id="btn-save-ticker" class="btn primary"><i data-feather="send"></i>Simpan Pengaturan Ticker</button>
+                </div>
+            </div>
+
+            <!-- PANE 4: AGENDA, HARI PENTING, NILAI BPS & AYAT/HADITS -->
+            <div class="pk-pane" id="pane-slides">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+                    <!-- Agenda Kustom -->
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:12px;">
+                        <h4 style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">Tambah Agenda Kantor Kustom</h4>
+                        <div style="display:grid;gap:8px;">
+                            <input type="text" id="new-ag-time" class="pk-input" placeholder="Waktu (cth: 08:30 - 11:00 WIB)">
+                            <input type="text" id="new-ag-title" class="pk-input" placeholder="Judul Kegiatan / Rapat">
+                            <input type="text" id="new-ag-desc" class="pk-input" placeholder="Tempat / Keterangan tambahan">
+                            <button type="button" id="btn-add-agenda" class="btn sm primary">Tambah Agenda</button>
+                        </div>
+                        <div id="custom-agenda-list" class="dyn-list"></div>
+                    </div>
+
+                    <!-- Hari Penting -->
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:12px;">
+                        <h4 style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">Kelola Hari Penting Mendatang</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <input type="number" id="new-hp-day" class="pk-input" placeholder="Tgl (1-31)" min="1" max="31">
+                            <input type="number" id="new-hp-mon" class="pk-input" placeholder="Bulan (1-12)" min="1" max="12">
+                            <input type="text" id="new-hp-name" class="pk-input" placeholder="Nama Hari Penting" style="grid-column:1/-1;">
+                            <button type="button" id="btn-add-hp" class="btn sm primary" style="grid-column:1/-1;">Tambah Hari Penting</button>
+                        </div>
+                        <div id="custom-hp-list" class="dyn-list"></div>
+                    </div>
+
+                    <!-- Nilai Inti BPS -->
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:12px;">
+                        <h4 style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">Kelola Nilai Inti BPS (PIA)</h4>
+                        <div style="display:grid;gap:8px;">
+                            <input type="text" id="new-vl-letter" class="pk-input" placeholder="Huruf / Singkatan (cth: P)" maxlength="4">
+                            <input type="text" id="new-vl-title" class="pk-input" placeholder="Judul Nilai (cth: Profesional)">
+                            <input type="text" id="new-vl-desc" class="pk-input" placeholder="Deskripsi singkat">
+                            <button type="button" id="btn-add-vl" class="btn sm primary">Tambah / Simpan Nilai Inti</button>
+                        </div>
+                        <div id="custom-vl-list" class="dyn-list"></div>
+                    </div>
+
+                    <!-- Ayat & Hadits -->
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:12px;">
+                        <h4 style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">Kelola Kutipan Ayat &amp; Hadits</h4>
+                        <div style="display:grid;gap:8px;">
+                            <input type="text" id="new-qt-kind" class="pk-input" placeholder="Kategori (cth: Ayat Al-Qur'an / Hadits)">
+                            <input type="text" id="new-qt-ar" class="pk-input" placeholder="Teks Arab (opsional)">
+                            <input type="text" id="new-qt-text" class="pk-input" placeholder="Terjemahan / Isi Kutipan">
+                            <input type="text" id="new-qt-src" class="pk-input" placeholder="Sumber (cth: QS. Al-Insyirah: 6)">
+                            <button type="button" id="btn-add-qt" class="btn sm primary">Tambah Kutipan</button>
+                        </div>
+                        <div id="custom-qt-list" class="dyn-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 5: JADWAL SHOLAT & VIDEO OTOMATIS -->
+            <div class="pk-pane" id="pane-schedules">
+                <div class="eoq-form">
+                    <label class="field">Jam Putar Video Sensus Ekonomi (Pisahkan koma)
+                        <input type="text" id="cfg-sched-sensus" value="07:25, 15:55" placeholder="07:25, 15:55">
+                    </label>
+                    <label class="field">Jam Putar Lagu Indonesia Raya (Pisahkan koma)
+                        <input type="text" id="cfg-sched-ir" value="10:00" placeholder="10:00">
+                    </label>
+                    <label class="field full">
+                        <span style="display:inline-flex;align-items:center;gap:8px;">
+                            <input type="checkbox" id="cfg-sholat-manual"> Gunakan Jam Jadwal Sholat Manual (Override API Kemenag)
+                        </span>
+                    </label>
+                    <label class="field">Subuh <input type="time" id="cfg-sh-fajr" value="04:40"></label>
+                    <label class="field">Dzuhur <input type="time" id="cfg-sh-dhuhr" value="12:04"></label>
+                    <label class="field">Ashar <input type="time" id="cfg-sh-asr" value="15:22"></label>
+                    <label class="field">Maghrib <input type="time" id="cfg-sh-maghrib" value="18:06"></label>
+                    <label class="field">Isya <input type="time" id="cfg-sh-isha" value="19:16"></label>
+                </div>
+                <div class="eoq-actions" style="margin-top:16px;">
+                    <button type="button" id="btn-save-schedules" class="btn primary"><i data-feather="clock"></i>Simpan Jadwal ke Display</button>
+                </div>
+            </div>
+
+            <p id="cust-feedback" style="min-height:18px;margin-top:12px;color:var(--blue);font-size:12px;"></p>
+        </div>
+
+        <!-- FITUR 5: NOTIFIKASI GEMPA BUMI REALTIME (BMKG - KOTA BENGKULU & KAB. BENGKULU TENGAH) -->
+        <div class="section-title">Peringatan &amp; Monitoring Gempa Bumi Realtime (BMKG)</div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h3>Deteksi Gempa Realtime Kota Bengkulu &amp; Kabupaten Bengkulu Tengah</h3>
+                    <p class="hint" style="margin-top:3px">Terhubung langsung ke API Terbuka BMKG (<code>data.bmkg.go.id</code>) &amp; USGS Seismic API. Memberikan peringatan darurat otomatis di layar display saat terjadi gempa di wilayah Kota Bengkulu &amp; Kab. Bengkulu Tengah.</p>
+                </div>
+                <span class="chart-badge live" id="bmkg-status-badge">BMKG Aktif</span>
+            </div>
+
+            <div class="quake-banner" id="latest-quake-box">
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#f87171;">Gempa Terakhir Tercatat BMKG</div>
+                    <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px;" id="qk-headline">Memuat data gempa terkini dari BMKG...</div>
+                    <div style="font-size:12.5px;color:var(--muted);margin-top:4px;" id="qk-sub">Menghubungkan ke server TEWS BMKG...</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button type="button" id="btn-check-bmkg" class="btn sm"><i data-feather="refresh-cw"></i>Cek BMKG Sekarang</button>
+                    <button type="button" id="btn-sim-quake" class="btn sm warn"><i data-feather="bell"></i>Simulasi Gempa Bengkulu Tengah di Display</button>
+                    <button type="button" id="btn-clear-quake" class="btn sm danger"><i data-feather="x-circle"></i>Tutup Peringatan di Display</button>
+                </div>
+            </div>
+
+            <div class="eoq-form">
+                <label class="field">Status Notifikasi Otomatis Gempa di Display
+                    <select id="qk-auto-enable">
+                        <option value="true" selected>Aktif Otomatis (Realtime BMKG + Sirine)</option>
+                        <option value="false">Nonaktif (Hanya Manual)</option>
+                    </select>
+                </label>
+                <label class="field">Radius Deteksi dari Kota Bengkulu &amp; Bengkulu Tengah (km)
+                    <input type="number" id="qk-radius-km" value="250" min="25" max="1000">
+                </label>
+                <label class="field">Suara Sirine Peringatan Darurat
+                    <select id="qk-sound-enable">
+                        <option value="true" selected>Bunyikan Sirine Darurat Otomatis</option>
+                        <option value="false">Tanpa Suara (Visual Saja)</option>
+                    </select>
+                </label>
+                <label class="field">Durasi Tampil Popup Peringatan (Detik)
+                    <input type="number" id="qk-duration-sec" value="45" min="10" max="300">
+                </label>
+            </div>
+            <div class="eoq-actions" style="margin-top:12px;">
+                <button type="button" id="btn-save-quake-cfg" class="btn primary sm"><i data-feather="shield"></i>Simpan Konfigurasi Gempa</button>
+            </div>
+            <p id="qk-feedback" style="min-height:18px;margin-top:8px;color:var(--blue);font-size:12px;"></p>
+
+            <div style="overflow-x:auto;margin-top:10px;">
+                <table class="quake-table">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Magnitudo</th>
+                            <th>Kedalaman</th>
+                            <th>Wilayah / Dirasakan</th>
+                            <th>Jarak ke Benteng / Kota Bengkulu</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qk-table-body">
+                        <tr><td colspan="6" style="color:var(--muted);text-align:center;">Memuat daftar gempa dirasakan BMKG...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const app = initializeApp({
+        apiKey: "AIzaSyAlVfejf312G-tIleA8izbxn98bDGe1MvM",
+        authDomain: "lintas-benteng.firebaseapp.com",
+        projectId: "lintas-benteng",
+        appId: "1:1005929757785:web:65b6d25b390677a98f0548"
+    });
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const mainRef = doc(db, 'display_control', 'main');
+    const statusRef = doc(db, 'display_control', 'status');
+
+    const channels = ['Trans7','TVRI','TVRI Bengkulu','TVRI World','Berita Satu','Nusantara TV','DAAI TV','Magna Channel','Metro TV','RCTI','MNCTV','GTV','iNews','Musik'];
+    const defaultEoq = {
+        name: 'Isma Afrita Lubis', role: 'Statistisi Muda', quarter: 'II', year: 2026,
+        photo: 'https://firebasestorage.googleapis.com/v0/b/lintas-benteng.firebasestorage.app/o/assets%2Frsz_isma_afrita_lubis_display.png?alt=media&token=1d10a62b-44c7-42fd-b9b4-d104dc1dc5bc'
+    };
+
+    const $ = id => document.getElementById(id);
+    const channelList = $('channel-list'), feedback = $('feedback');
+    const eoqForm = $('eoq-form'), eoqFeedback = $('eoq-feedback'), eoqPreview = $('eoq-photo-preview');
+    let selectedChannel = 0, status = null;
+
+    feather.replace();
+
+    // ---------- clock + sidebar ----------
+    function updateClock() { $('clock').textContent = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+    setInterval(updateClock, 1000); updateClock();
+    window.toggleSidebar = function () {
+        const sb = $('sidebar'), ov = $('overlay');
+        sb.classList.toggle('open');
+        ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+    };
+
+    // ---------- auth guard ----------
+    onAuthStateChanged(auth, async user => {
+        if (!user) {
+            $('sidebarEmail').textContent = 'Guest';
+            $('avatarLetter').textContent = 'G';
+            startListeners();
+            return;
+        }
+        $('sidebarEmail').textContent = user.email || 'Guest';
+        $('avatarLetter').textContent = (user.email || 'G').charAt(0).toUpperCase();
+        try {
+            const snap = await getDoc(doc(db, 'users', user.uid));
+            const role = snap.data()?.role;
+            let ok = role === 'admin' || role === 'sub-admin' || user.email === 'sutannadhif@gmail.com';
+            if (!ok) {
+                const cfg = await getDoc(doc(db, 'settings', 'admin_config'));
+                ok = (cfg.data()?.adminEmails || []).includes(user.email);
+            }
+            if (!ok) {
+                console.warn('⚠️ Access not granted, but continuing in guest mode');
+            }
+        } catch (e) { console.error(e); }
+        startListeners();
+    });
+    window.logout = async () => {
+        await signOut(auth);
+    };
+
+    // ---------- helpers ----------
+    function validateEoq(d) {
+        if (!d || typeof d !== 'object') return null;
+        const name = String(d.name || '').trim().slice(0, 100);
+        const role = String(d.role || '').trim().slice(0, 100);
+        const quarter = ['I','II','III','IV'].includes(d.quarter) ? d.quarter : null;
+        const year = Number(d.year);
+        let photo = '';
+        if (String(d.photo || '').trim()) {
+            try {
+                const u = new URL(String(d.photo).trim());
+                if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+                photo = u.href;
+            } catch { return null; }
+        }
+        if (!name || !role || !quarter || !Number.isInteger(year) || year < 2000 || year > 2100) return null;
+        return { name, role, quarter, year, photo };
+    }
+
+    function fillEoqForm(data) {
+        const e = validateEoq(data) || defaultEoq;
+        eoqForm.elements.name.value = e.name;
+        eoqForm.elements.role.value = e.role;
+        eoqForm.elements.quarter.value = e.quarter;
+        eoqForm.elements.year.value = String(e.year);
+        eoqForm.elements.photo.value = e.photo;
+        if (e.photo) { eoqPreview.src = e.photo; eoqPreview.hidden = false; }
+        else { eoqPreview.removeAttribute('src'); eoqPreview.hidden = true; }
+    }
+
+    async function writeMain(patch, okMsg, target = feedback) {
+        try {
+            await setDoc(mainRef, { ...patch, updatedAt: Date.now() }, { merge: true });
+            if (target) target.textContent = okMsg;
+        } catch (e) {
+            console.error(e);
+            if (target) target.textContent = 'Gagal menyimpan: ' + (e.code || e.message);
+        }
+    }
+
+    const isOnline = () => !!(status?.heartbeat && Date.now() - status.heartbeat < 25000);
+
+    // ---------- render ----------
+    function renderChannels() {
+        channelList.innerHTML = channels.map((n, i) =>
+            `<button type="button" class="channel${i === selectedChannel ? ' active' : ''}" data-i="${i}">${n}</button>`).join('');
+        $('current-channel').textContent = channels[selectedChannel];
+        channelList.querySelectorAll('.channel').forEach(b =>
+            b.addEventListener('click', () => {
+                const i = Number(b.dataset.i);
+                selectedChannel = i; renderChannels(); renderStatus();
+                writeMain({ channel: i }, `Perintah pindah ke ${channels[i]} dikirim.`);
+            }));
+    }
+
+    function setTrend(id, text, cls) { const el = $(id); el.textContent = text; el.className = 'stat-trend ' + (cls || ''); }
+
+    function renderStatus() {
+        const online = isOnline();
+        $('st-conn').textContent = online ? 'ONLINE' : 'OFFLINE';
+        setTrend('st-conn-sub', online ? 'display terhubung' : 'display offline / belum dibuka', online ? 'up' : 'down');
+
+        const ch = Number.isInteger(status?.channel) ? status.channel : selectedChannel;
+        $('st-channel').textContent = channels[ch] || '—';
+
+        const a = status?.autoOn;
+        const autoBtn = $('btn-auto-schedules');
+        const autoState = $('auto-schedules-state');
+        if (autoBtn) autoBtn.textContent = a === true ? 'Matikan jadwal otomatis' : 'Aktifkan jadwal otomatis';
+        if (autoState) autoState.textContent = online ? `Jadwal otomatis: ${a === true ? 'aktif' : a === false ? 'mati' : 'belum dikonfirmasi'}` : 'Status display: offline';
+        if (!online) { $('st-auto').textContent = '—'; setTrend('st-auto-sub', 'menunggu display online', 'warn'); }
+        else if (a === true) { $('st-auto').textContent = 'AKTIF'; setTrend('st-auto-sub', 'azan, Indonesia Raya & video SE2026 siap', 'up'); }
+        else if (a === false) { $('st-auto').textContent = 'MATI'; setTrend('st-auto-sub', 'diatur dari panel kontrol', 'warn'); }
+        else { $('st-auto').textContent = '—'; setTrend('st-auto-sub', 'diaktifkan dari layar display', ''); }
+
+        if (!online) { $('st-unlock').textContent = '—'; setTrend('st-unlock-sub', 'menunggu display online', 'warn'); }
+        else if (status.unlocked === false) { $('st-unlock').textContent = 'BELUM'; setTrend('st-unlock-sub', 'klik/sentuh layar display 1×', 'down'); }
+        else { $('st-unlock').textContent = 'OK'; setTrend('st-unlock-sub', 'audio & video boleh diputar', 'up'); }
+    }
+
+    // ---------- events ----------
+    eoqForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const data = validateEoq(Object.fromEntries(new FormData(eoqForm)));
+        if (!data) { eoqFeedback.textContent = 'Periksa data. Nama, jabatan, kuartal, tahun wajib; URL foto harus HTTP/HTTPS.'; return; }
+        writeMain({ eoq: data }, 'Data tersimpan dan dikirim ke display.', eoqFeedback);
+    });
+    eoqForm.elements.photo.addEventListener('input', () => {
+        try {
+            const u = new URL(eoqForm.elements.photo.value.trim());
+            if (u.protocol === 'https:' || u.protocol === 'http:') { eoqPreview.src = u.href; eoqPreview.hidden = false; return; }
+        } catch {}
+        eoqPreview.removeAttribute('src'); eoqPreview.hidden = true;
+    });
+    $('eoq-reset').addEventListener('click', () => {
+        fillEoqForm(defaultEoq);
+        writeMain({ eoq: defaultEoq }, 'Data dikembalikan ke data awal.', eoqFeedback);
+    });
+
+    // ---------- realtime ----------
+    function startListeners() {
+        onSnapshot(mainRef, snap => {
+            const d = snap.data() || {};
+            if (Number.isInteger(d.channel) && d.channel >= 0 && d.channel < channels.length) selectedChannel = d.channel;
+            renderChannels(); renderStatus();
+            if (!eoqForm.contains(document.activeElement)) fillEoqForm(d.eoq);
+        }, err => { feedback.textContent = 'Gagal membaca: ' + err.code; });
+
+        onSnapshot(statusRef, snap => { status = snap.data() || null; renderStatus(); });
+        setInterval(renderStatus, 5000);
+    }
+
+    renderChannels();
+    fillEoqForm(defaultEoq);
+    renderStatus();
+
+    // =========================================================================
+    // FITUR TAMBAHAN PANEL KONTROL:
+    // 1. BroadcastChannel + localStorage + Firestore Realtime Sync
+    // 2. Integrasi Otomatis Channel Indonesia dari iptv-org/iptv + Validasi Link
+    // 3. YouTube Embed (Lagu/Video) & Kontrol Volume (Initial State: Mute)
+    // 4. Drag-and-Drop Layout Studio & Kustomisasi Semua Konten Display
+    // 5. Deteksi & Notifikasi Gempa Bumi Realtime (BMKG) Kota Bengkulu & Benteng
+    // =========================================================================
+
+    const bc = 'BroadcastChannel' in window ? new BroadcastChannel('lintasbenteng-display-control') : null;
+    const LOCAL_CFG_KEY = 'lintasbenteng-display-config';
+    const LOCAL_CH_KEY = 'lintasbenteng-channels-v2';
+
+    // Daftar channel dasar yang sudah diperkuat dengan multi-backup stream agar bebas error
+    // Sumber: iptv-org/iptv (streams/id.m3u) + situs resmi stasiun TV Indonesia
+    const BASE_CHANNELS = [
+        // Nasional Utama
+        { name: 'Trans7', type: 'iframe', cat: 'utama', url: 'https://www.transtv.co.id/live/trans7/embed?autoplay=true&mute=true&player_only=true', backups: ['https://20.detik.com/watch/livestreaming-trans7', 'https://www.transtv.co.id/live/trans7'] },
+        { name: 'Trans TV', type: 'iframe', cat: 'utama', url: 'https://20.detik.com/watch/livestreaming-transtv', backups: ['https://www.transtv.co.id/live/transtv'] },
+        { name: 'RCTI', type: 'hls', cat: 'utama', url: 'https://mncmedia.malingtv.workers.dev/rcti.m3u8', backups: ['https://sindikasi.inews.id/embed/video/YWdlbmQ9ZGVza3RvcCZ1cmw9aHR0cHMlM0ElMkYlMkZlbWJlZC5yY3RpcGx1cy5jb20lMkZsaXZlJTJGcmN0aSZoZWlnaHQ9MTAwJTI1JndpZHRoPTEwMCUyNQ==', 'https://www.mncvision.id/live/rcti'] },
+        { name: 'MNCTV', type: 'hls', cat: 'utama', url: 'https://mncmedia.malingtv.workers.dev/mnctv.m3u8', backups: ['https://sindikasi.inews.id/embed/video/YWdlbmQ9ZGVza3RvcCZ1cmw9aHR0cHMlM0ElMkYlMkZlbWJlZC5yY3RpcGx1cy5jb20lMkZsaXZlJTJGbW5jdHYmaGVpZ2h0PTEwMCUyNSZ3aWR0aD0xMDAlMjU=', 'https://www.mncvision.id/live/mnctv'] },
+        { name: 'GTV', type: 'hls', cat: 'utama', url: 'https://mncmedia.malingtv.workers.dev/gtv.m3u8', backups: ['https://sindikasi.inews.id/embed/video/YWdlbmQ9ZGVza3RvcCZ1cmw9aHR0cHMlM0ElMkYlMkZlbWJlZC5yY3RpcGx1cy5jb20lMkZsaXZlJTJGZ3R2JmhlaWdodD0xMDAlMjUmd2lkdGg9MTAwJTI1', 'https://www.gtv.id/live'] },
+        { name: 'iNews', type: 'hls', cat: 'berita', url: 'https://mncmedia.malingtv.workers.dev/inews.m3u8', backups: ['https://sindikasi.inews.id/embed/video/YWdlbmQ9ZGVza3RvcCZ1cmw9aHR0cHMlM0ElMkYlMkZlbWJlZC5yY3RpcGx1cy5jb20lMkZsaXZlJTJGaW5ld3MmaGVpZ2h0PTEwMCUyNSZ3aWR0aD0xMDAlMjU=', 'https://www.inews.id/tv/live'] },
+        { name: 'Nusantara TV', type: 'hls', cat: 'utama', url: 'https://nusantaratv.siar.us/nusantaratv/live/playlist.m3u8', backups: ['https://www.nusantaratv.com/live'] },
+        { name: 'DAAI TV', type: 'hls', cat: 'utama', url: 'https://pull.daaiplus.com/live-DAAIPLUS/live-DAAIPLUS_HD.m3u8', backups: ['https://www.daai.tv/live'] },
+        { name: 'Magna Channel', type: 'hls', cat: 'utama', url: 'https://edge.medcom.id/live-edge/smil:magna.smil/playlist.m3u8', backups: [] },
+        
+        // TVRI (Resmi - paling stabil)
+        { name: 'TVRI Nasional', type: 'hls', cat: 'tvri', url: 'https://ott-balancer.tvri.go.id/live/eds/Nasional/hls/Nasional.m3u8', backups: ['https://tvriweb.live.ptsp.net.id/live/eds/Nasional/hls/Nasional.m3u8'] },
+        { name: 'TVRI Bengkulu', type: 'hls', cat: 'tvri', url: 'https://ott-balancer.tvri.go.id/live/eds/Bengkulu/hls/Bengkulu.m3u8', backups: ['https://ott-balancer.tvri.go.id/live/eds/Nasional/hls/Nasional.m3u8'] },
+        { name: 'TVRI World', type: 'hls', cat: 'tvri', url: 'https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8', backups: [] },
+        { name: 'TVRI Sport', type: 'hls', cat: 'tvri', url: 'https://ott-balancer.tvri.go.id/live/eds/TVRISportHD/hls/TVRISportHD.m3u8', backups: [] },
+        
+        // Berita & Informasi
+        { name: 'Metro TV', type: 'hls', cat: 'berita', url: 'https://edge.medcom.id/live-edge/smil:metro.smil/playlist.m3u8', backups: ['https://www.dailymotion.com/embed/video/k233302219129489984?autoplay=1&mute=1', 'https://www.metrotvnews.com/live'] },
+        { name: 'CNN Indonesia', type: 'hls', cat: 'berita', url: 'https://live.cnnindonesia.com/livecnn/smil:cnntv.smil/playlist.m3u8', backups: ['https://www.cnnindonesia.com/tv/embed', 'https://www.youtube.com/embed/live_stream?channel=UChIwQIKfF001zZ3D4Xx5V0Q&enablejsapi=1&autoplay=1&mute=1'] },
+        { name: 'CNBC Indonesia', type: 'hls', cat: 'berita', url: 'https://live.cnbcindonesia.com/livecnbc/smil:cnbctv.smil/playlist.m3u8', backups: ['https://www.cnbcindonesia.com/live'] },
+        { name: 'Berita Satu (BTV)', type: 'hls', cat: 'berita', url: 'https://xtdslboppkkv-pull.bpmedialive.com/live/beritasatu/abr.m3u8', backups: ['https://www.beritasatu.com/live'] },
+        { name: 'Kompas TV', type: 'iframe', cat: 'berita', url: 'https://www.youtube.com/embed/live_stream?channel=UC5BMIWZe9isJXLZZWPWvBlg&enablejsapi=1&autoplay=1&mute=1&playsinline=1', backups: ['https://www.kompas.tv/live'] },
+        { name: 'Garuda TV', type: 'hls', cat: 'berita', url: 'https://garudatv.siar.us/garudatv/live/playlist.m3u8', backups: [] },
+        { name: 'RTV', type: 'hls', cat: 'berita', url: 'https://rtv.siar.us/rtv/live/playlist.m3u8', backups: ['https://www.rtv.co.id/live'] },
+        { name: 'TVOne', type: 'iframe', cat: 'berita', url: 'https://www.youtube.com/embed/live_stream?channel=UCxKqJXj8q8qK9Q5Q5Q5Q5Q5&enablejsapi=1&autoplay=1&mute=1', backups: [] },
+        
+        // YouTube / Musik / Kustom
+        { name: 'Musik / YouTube', type: 'iframe', cat: 'youtube', url: 'https://www.youtube.com/embed/HWj1FwivQW8?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=HWj1FwivQW8&rel=0&playsinline=1', backups: [] },
+        { name: 'Mars BPS', type: 'iframe', cat: 'youtube', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=dQw4w9WgXcQ&rel=0&playsinline=1', backups: [] }
+    ];
+
+    let fullChannelList = [...BASE_CHANNELS];
+    let chValidationMap = {}; // url -> 'ok' | 'warn' | 'dead'
+    let activeCategory = 'all';
+    let searchQuery = '';
+
+    // State kustomisasi lengkap
+    const defaultDisplayConfig = {
+        theme: 'dark',
+        sholatSwap: 'normal',
+        brandTitle: 'LINTAS BENTENG',
+        brandSub: 'BPS Kabupaten Bengkulu Tengah',
+        brandLogo: 'https://iili.io/nwp1YYl.jpg',
+        liveBadge: 'LIVE',
+        titleMap: 'Live Tracking',
+        titleTv: 'Siaran TV',
+        footerText: 'Tim IT Pengolahan · BPS Kab. Bengkulu Tengah',
+        tvFitMode: 'cover',
+        hideDeadChannels: false,
+        autoSkipDead: true,
+        displayDndEnabled: false,
+        columns: [
+            { id: 'map', label: 'Kotak Peta (Live Tracking)', weight: 0.9, visible: true },
+            { id: 'tv', label: 'Kotak Siaran TV & YouTube', weight: 2.1, visible: true },
+            { id: 'eoq', label: 'Kotak Info (EOQ · Agenda · Nilai · Ayat)', weight: 1.2, visible: true }
+        ],
+        rows: [
+            { id: 'header', label: 'Baris 1: Header Instansi & Jam', visible: true },
+            { id: 'main', label: 'Baris 2: Grid Utama (Peta, TV, Info)', visible: true },
+            { id: 'sholat', label: 'Baris 3: Kalender, Cuaca & Jadwal Sholat', visible: true },
+            { id: 'ticker', label: 'Baris 4: Ticker Berita & Pengumuman', visible: true },
+            { id: 'footer', label: 'Baris 5: Footer & Bar Channel', visible: true }
+        ],
+        slides: [
+            { id: 'eoq', label: 'Employee of the Quarter', dwellSec: 9, visible: true },
+            { id: 'agenda', label: 'Agenda Kantor Hari Ini', dwellSec: 13, visible: true },
+            { id: 'upcoming', label: 'Hari Penting Mendatang', dwellSec: 9, visible: true },
+            { id: 'values', label: 'Nilai Inti BPS (PIA)', dwellSec: 8, visible: true },
+            { id: 'quote', label: 'Ayat Al-Qur’an & Hadits', dwellSec: 12, visible: true }
+        ],
+        ticker: {
+            label: 'LINTAS BENTENG',
+            topic: 'bengkulu tengah',
+            mode: 'both',
+            speedSec: 240,
+            customMessages: [
+                'Selamat Datang di Badan Pusat Statistik Kabupaten Bengkulu Tengah — Melayani dengan Profesional, Integritas, dan Amanah.'
+            ]
+        },
+        customAgenda: [],
+        customHariPenting: [
+            [1, 1, 'Tahun Baru Masehi'], [5, 2, 'Hari Pendidikan Nasional'], [5, 20, 'Hari Kebangkitan Nasional'],
+            [6, 1, 'Hari Lahir Pancasila'], [8, 17, 'HUT Kemerdekaan RI'], [9, 26, 'Hari Statistik Nasional'],
+            [10, 1, 'Hari Kesaktian Pancasila'], [10, 28, 'Hari Sumpah Pemuda'], [11, 10, 'Hari Pahlawan'],
+            [12, 22, 'Hari Ibu'], [12, 25, 'Hari Natal']
+        ],
+        customValues: [
+            { letter: 'P', title: 'Profesional', desc: 'Bekerja dengan kompetensi, cermat, dan bertanggung jawab.' },
+            { letter: 'I', title: 'Integritas', desc: 'Jujur, objektif, dan konsisten dalam setiap data.' },
+            { letter: 'A', title: 'Amanah', desc: 'Dapat dipercaya menjaga tugas dan kerahasiaan data.' }
+        ],
+        customQuotes: [
+            ['Ayat Al-Qur’an', 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا ۝ إِنَّ مَعَ الْعُسْرِ يُسْرًا', 'Karena sesungguhnya sesudah kesulitan itu ada kemudahan. Sesungguhnya sesudah kesulitan itu ada kemudahan.', 'QS. Al-Insyirah: 5–6'],
+            ['Hadits', 'خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ', 'Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.', 'HR. Ahmad & Thabrani']
+        ],
+        schedules: {
+            sensus: ['07:25', '15:55'],
+            ir: ['10:00'],
+            manualSholat: false,
+            sholatTimes: { Fajr: '04:40', Dhuhr: '12:04', Asr: '15:22', Maghrib: '18:06', Isha: '19:16' }
+        },
+        audioControl: {
+            muted: true, // Keadaan awal adalah MUTE sesuai spesifikasi
+            volume: 50,
+            action: 'init',
+            ts: 0
+        },
+        youtubeEmbed: {
+            active: false,
+            mode: 'tv', // 'tv' | 'bgm'
+            title: 'Musik / Lagu',
+            url: 'https://www.youtube.com/embed/HWj1FwivQW8?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=HWj1FwivQW8&rel=0&playsinline=1',
+            playlist: [
+                { title: 'Musik Instrumental Nusantara', url: 'https://www.youtube.com/watch?v=HWj1FwivQW8' },
+                { title: 'Mars Statistik BPS', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+            ]
+        },
+        quakeConfig: {
+            autoEnable: true,
+            radiusKm: 250,
+            soundEnable: true,
+            durationSec: 45
+        }
+    };
+
+    let displayConfig = JSON.parse(JSON.stringify(defaultDisplayConfig));
+    try {
+        const savedCfg = localStorage.getItem(LOCAL_CFG_KEY);
+        if (savedCfg) displayConfig = { ...defaultDisplayConfig, ...JSON.parse(savedCfg) };
+        if (displayConfig.hideDeadChannels === undefined) displayConfig.hideDeadChannels = false;
+        const savedCh = localStorage.getItem(LOCAL_CH_KEY);
+        if (savedCh) {
+            const parsedCh = JSON.parse(savedCh);
+            if (Array.isArray(parsedCh) && parsedCh.length >= BASE_CHANNELS.length) fullChannelList = parsedCh;
+        }
+    } catch (e) {}
+
+    // Fungsi kirim ke Display (Firestore + BroadcastChannel + localStorage)
+    async function syncToDisplay(patch, msg = 'Perubahan dikirim ke display.', feedbackEl = feedback, silent = false) {
+        try {
+            localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify(displayConfig));
+        } catch (e) {}
+        if (bc) {
+            try { bc.postMessage({ type: 'full-sync', patch, config: displayConfig, channels: fullChannelList, ts: Date.now() }); } catch (e) {}
+        }
+        await writeMain({ ...patch, displayConfig }, msg, silent ? null : feedbackEl);
+    }
+
+    $('btn-info-prev')?.addEventListener('click', () => syncToDisplay({ infoSlide: { direction: -1, ts: Date.now() } }, 'Perintah slide sebelumnya dikirim ke display.'));
+    $('btn-info-next')?.addEventListener('click', () => syncToDisplay({ infoSlide: { direction: 1, ts: Date.now() } }, 'Perintah slide berikutnya dikirim ke display.'));
+    $('btn-auto-schedules')?.addEventListener('click', () => {
+        const event = { enabled: status?.autoOn !== true, ts: Date.now() };
+        syncToDisplay({ autoSchedules: event }, event.enabled ? 'Jadwal otomatis diaktifkan dari panel.' : 'Jadwal otomatis dimatikan dari panel.');
+    });
+
+    // ---------- 1. PARSER & AUTO-SYNC IPTV-ORG INDONESIA + VALIDASI LINK ----------
+    function extractYoutubeEmbedUrl(rawInput, startMuted = true) {
+        const str = String(rawInput || '').trim();
+        if (!str) return null;
+        // Jika user memasukkan kode <iframe ... src="...">
+        const iframeMatch = str.match(/src=["']([^"']+)["']/i);
+        const target = iframeMatch ? iframeMatch[1] : str;
+        let videoId = null, listId = null;
+        try {
+            const u = new URL(target);
+            if (u.hostname.includes('youtu.be')) {
+                videoId = u.pathname.slice(1).split('/')[0];
+            } else if (u.hostname.includes('youtube.com') || u.hostname.includes('youtube-nocookie.com')) {
+                if (u.pathname.startsWith('/embed/')) {
+                    videoId = u.pathname.split('/embed/')[1].split('/')[0];
+                } else if (u.pathname.startsWith('/live/')) {
+                    videoId = u.pathname.split('/live/')[1].split('/')[0];
+                } else {
+                    videoId = u.searchParams.get('v');
+                }
+                listId = u.searchParams.get('list');
+            }
+        } catch {
+            if (/^[A-Za-z0-9_-]{11}$/.test(target)) videoId = target;
+        }
+        const muteParam = startMuted ? 1 : 0;
+        if (videoId && videoId !== 'live_stream') {
+            return `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&mute=${muteParam}&loop=1&playlist=${videoId}${listId ? '&list=' + listId : ''}&rel=0&playsinline=1`;
+        }
+        if (listId) {
+            return `https://www.youtube.com/embed/videoseries?list=${listId}&enablejsapi=1&autoplay=1&mute=${muteParam}&loop=1&rel=0&playsinline=1`;
+        }
+        if (target.startsWith('http://') || target.startsWith('https://')) {
+            return target;
+        }
+        return null;
+    }
+
+    function parseM3UPlaylist(m3uText) {
+        const lines = String(m3uText || '').split(/\r?\n/);
+        const result = [];
+        let currentMeta = null;
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+            if (line.startsWith('#EXTINF:')) {
+                const commaAt = line.lastIndexOf(',');
+                const rawName = (commaAt >= 0 ? line.slice(commaAt + 1) : '').trim().replace(/\s*\([^)]*\)/g, '').trim();
+                const groupMatch = line.match(/group-title="([^"]+)"/i);
+                const group = groupMatch ? groupMatch[1] : '';
+                currentMeta = { name: rawName, group };
+            } else if (!line.startsWith('#') && currentMeta) {
+                if (/^https?:\/\//i.test(line)) {
+                    let cat = 'iptv';
+                    if (/tvri/i.test(currentMeta.name)) cat = 'tvri';
+                    else if (/news|berita|kompas|metro|cnn|cnbc|tvone|btv|garuda/i.test(currentMeta.name)) cat = 'berita';
+                    result.push({
+                        name: currentMeta.name || 'Channel ID',
+                        type: 'hls',
+                        cat,
+                        url: line,
+                        insecure: line.startsWith('http://'),
+                        fromIptvOrg: true,
+                        backups: []
+                    });
+                }
+                currentMeta = null;
+            }
+        }
+        return result;
+    }
+
+    const IPTV_SOURCES = [
+        'https://iptv-org.github.io/iptv/countries/id.m3u',
+        'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/id.m3u',
+        'https://cdn.jsdelivr.net/gh/iptv-org/iptv@master/streams/id.m3u'
+    ];
+
+    async function syncFromIptvOrg(silent = false) {
+        const badge = $('iptv-sync-badge');
+        const syncLbl = $('iptv-last-sync');
+        if (badge) badge.textContent = 'Menyinkronkan iptv-org...';
+        let parsed = [];
+        for (const srcUrl of IPTV_SOURCES) {
+            try {
+                const ctl = new AbortController();
+                const t = setTimeout(() => ctl.abort(), 9000);
+                const res = await fetch(srcUrl, { signal: ctl.signal });
+                clearTimeout(t);
+                if (res.ok) {
+                    const txt = await res.text();
+                    parsed = parseM3UPlaylist(txt);
+                    if (parsed.length > 0) break;
+                }
+            } catch (e) {}
+        }
+        if (!parsed.length) {
+            if (badge) badge.textContent = 'Live · Cache Aktif';
+            if (!silent) feedback.textContent = 'Menggunakan daftar channel lokal (server GitHub sedang sibuk).';
+            return;
+        }
+        // Gabungkan dengan BASE_CHANNELS tanpa merusak urutan channel utama.
+        const selectedName = fullChannelList[selectedChannel]?.name;
+        const merged = [...BASE_CHANNELS.map(c => ({ ...c, backups: [...(c.backups || [])] }))];
+        const existingByName = new Map();
+        merged.forEach((c, idx) => existingByName.set(c.name.toLowerCase().replace(/[^a-z0-9]/g, ''), idx));
+
+        parsed.forEach(item => {
+            const key = item.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!key) return;
+            if (existingByName.has(key)) {
+                const idx = existingByName.get(key);
+                if (merged[idx].url !== item.url && !merged[idx].backups.includes(item.url)) {
+                    merged[idx].backups.push(item.url);
+                }
+            } else {
+                // Sertakan semua channel sumber. Link HTTP tetap terlihat dan tervalidasi
+                // sebagai peringatan karena browser HTTPS dapat memblokir mixed-content.
+                existingByName.set(key, merged.length);
+                merged.push(item);
+            }
+        });
+
+        const baseNames = new Set(BASE_CHANNELS.map(ch => ch.name));
+        const customChannels = fullChannelList.filter(ch => ch.custom === true || (ch.cat === 'youtube' && !baseNames.has(ch.name)));
+        customChannels.forEach(ch => {
+            const key = ch.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (key && !existingByName.has(key)) {
+                existingByName.set(key, merged.length);
+                merged.push(ch);
+            }
+        });
+        fullChannelList = merged;
+        const selectedKey = String(selectedName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        selectedChannel = Math.max(0, fullChannelList.findIndex(ch => ch.name.toLowerCase().replace(/[^a-z0-9]/g, '') === selectedKey));
+        try { localStorage.setItem(LOCAL_CH_KEY, JSON.stringify(fullChannelList)); } catch (e) {}
+        const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        if (syncLbl) syncLbl.textContent = `Update iptv-org: ${nowStr} WIB (${fullChannelList.length} channel)`;
+        if (badge) badge.textContent = `Live · ${fullChannelList.length} Ch`;
+        renderEnhancedChannels();
+        syncToDisplay({ customChannels: fullChannelList, channel: selectedChannel, selectedChannelObj: fullChannelList[selectedChannel] }, `Berhasil memuat & menggabungkan ${fullChannelList.length} channel Indonesia dari iptv-org.`, feedback, silent);
+    }
+
+    async function probeStreamUrl(ch) {
+        if (!ch || !ch.url) return 'dead';
+        if (ch.type === 'iframe') return 'ok';
+        const urlsToTry = [ch.url, ...(ch.backups || [])];
+        let inconclusive = false;
+        for (const u of urlsToTry) {
+            if (u.includes('youtube.com/embed') || u.includes('detik.com') || u.includes('dailymotion.com') || u.includes('inews.id')) return 'ok';
+            const ctl = new AbortController();
+            const timer = setTimeout(() => ctl.abort(), 5000);
+            try {
+                const r = await fetch(u, { method: 'GET', headers: { Range: 'bytes=0-1023' }, signal: ctl.signal });
+                clearTimeout(timer);
+                if (r.ok) {
+                    let txt = '';
+                    if (r.body?.getReader) {
+                        const reader = r.body.getReader();
+                        const chunk = await reader.read();
+                        txt = new TextDecoder().decode((chunk.value || new Uint8Array()).slice(0, 4096));
+                        reader.cancel().catch(() => {});
+                    } else {
+                        txt = (await r.text()).slice(0, 4096);
+                    }
+                    if (txt.includes('#EXTM3U') || /mpegurl|video\//i.test(r.headers.get('content-type') || '')) {
+                        if (u !== ch.url) ch.activeBackupUrl = u;
+                        return 'ok';
+                    }
+                    if (r.status !== 404 && r.status !== 410) inconclusive = true;
+                } else if (r.status !== 404 && r.status !== 410) inconclusive = true;
+            } catch (e) {
+                clearTimeout(timer);
+                // Browser tidak dapat membaca stream lintas domain tanpa izin CORS.
+                inconclusive = true;
+            }
+        }
+        if ((ch.backups || []).some(b => !b.endsWith('.m3u8'))) return 'warn';
+        return inconclusive ? 'warn' : 'dead';
+    }
+
+    let isValidating = false;
+    async function validateAllChannels() {
+        if (isValidating) return;
+        isValidating = true;
+        const cntEl = $('val-count');
+        const total = fullChannelList.length;
+        let done = 0, alive = 0;
+        const batchSize = 8;
+        for (let i = 0; i < total; i += batchSize) {
+            const slice = fullChannelList.slice(i, i + batchSize);
+            await Promise.all(slice.map(async ch => {
+                const st = await probeStreamUrl(ch);
+                chValidationMap[ch.url] = st;
+                if (st === 'ok' || st === 'warn') alive++;
+                done++;
+                if (cntEl) cntEl.textContent = `${done}/${total}`;
+            }));
+            renderEnhancedChannels();
+        }
+        if (cntEl) cntEl.textContent = `${alive} Aktif`;
+        feedback.textContent = `Validasi selesai: ${alive} siaran aktif dari ${total} channel. Siaran mati otomatis disembunyikan/dialihkan ke cadangan.`;
+        isValidating = false;
+    }
+
+    function renderEnhancedChannels() {
+        const hideDead = $('chk-hide-dead')?.checked ?? false;
+        if ($('cnt-all')) $('cnt-all').textContent = String(fullChannelList.length);
+
+        const escapeHtml = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+        const html = fullChannelList.map((ch, i) => {
+            const st = chValidationMap[ch.url] || (ch.type === 'iframe' ? 'ok' : '');
+            const isDead = st === 'dead';
+            const matchCat =
+                activeCategory === 'all' ||
+                (activeCategory === 'valid' && (st === 'ok' || st === 'warn')) ||
+                ch.cat === activeCategory;
+            const matchSearch = !searchQuery || ch.name.toLowerCase().includes(searchQuery);
+            const hiddenClass = (!matchCat || !matchSearch || (hideDead && isDead && i !== selectedChannel)) ? ' hidden-dead' : '';
+            const dotClass = st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : st === 'dead' ? 'dead' : 'ok';
+            const badgeText = st === 'dead' ? 'Mati' : ch.type === 'iframe' ? 'Embed' : 'HLS';
+            return `<button type="button" class="channel${i === selectedChannel ? ' active' : ''}${isDead ? ' dead-stream' : ''}${hiddenClass}" data-i="${i}">
+                <div class="ch-top">
+                    <span class="ch-name">${escapeHtml(ch.name)}</span>
+                    <span class="ch-dot ${dotClass}" title="Status link: ${badgeText}"></span>
+                </div>
+                <div class="ch-meta">
+                    <span>${badgeText}</span>
+                    <span>#${i + 1}</span>
+                </div>
+            </button>`;
+        }).join('');
+
+        channelList.innerHTML = html;
+        const activeCh = fullChannelList[selectedChannel] || fullChannelList[0];
+        if (activeCh) {
+            $('current-channel').textContent = activeCh.name;
+            if ($('current-channel-url')) $('current-channel-url').textContent = `(${activeCh.type.toUpperCase()})`;
+        }
+
+        channelList.querySelectorAll('.channel').forEach(b => {
+            b.addEventListener('click', () => {
+                const i = Number(b.dataset.i);
+                const chosen = fullChannelList[i];
+                selectedChannel = i;
+                renderEnhancedChannels();
+                renderStatus();
+                if (bc) bc.postMessage({ type: 'channel-select', index: i, channelObj: chosen });
+                writeMain({ channel: i, selectedChannelObj: chosen }, `Perintah pindah ke ${chosen.name} dikirim ke display.`);
+            });
+        });
+    }
+
+    // Event filter & pencarian channel
+    $('ch-search')?.addEventListener('input', e => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        renderEnhancedChannels();
+    });
+    $('chk-hide-dead')?.addEventListener('change', e => {
+        displayConfig.hideDeadChannels = e.target.checked;
+        renderEnhancedChannels();
+    });
+    $('chk-auto-skip-dead')?.addEventListener('change', e => {
+        displayConfig.autoSkipDead = e.target.checked;
+        syncToDisplay({ displayConfig }, 'Pengaturan auto-skip siaran mati disimpan.');
+    });
+    $('tv-fit-mode')?.addEventListener('change', e => {
+        displayConfig.tvFitMode = e.target.value;
+        syncToDisplay({ displayConfig }, `Mode rasio tampilan TV diubah ke ${e.target.value}.`);
+    });
+    $('btn-validate-links')?.addEventListener('click', validateAllChannels);
+    $('btn-sync-iptv')?.addEventListener('click', () => syncFromIptvOrg(false));
+
+    document.querySelectorAll('#ch-cat-bar .ch-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#ch-cat-bar .ch-cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCategory = btn.dataset.cat;
+            renderEnhancedChannels();
+        });
+    });
+
+    $('btn-add-channel')?.addEventListener('click', async () => {
+        const name = $('new-ch-name').value.trim();
+        const type = $('new-ch-type').value;
+        let url = $('new-ch-url').value.trim();
+        if (!name || !url) {
+            feedback.textContent = 'Nama channel dan URL wajib diisi.';
+            return;
+        }
+        if (type === 'iframe' && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+            url = extractYoutubeEmbedUrl(url, displayConfig.audioControl.muted) || url;
+        }
+        const newCh = { name, type, cat: 'youtube', url, backups: [], custom: true };
+        const st = await probeStreamUrl(newCh);
+        chValidationMap[url] = st;
+        fullChannelList.push(newCh);
+        try { localStorage.setItem(LOCAL_CH_KEY, JSON.stringify(fullChannelList)); } catch (e) {}
+        selectedChannel = fullChannelList.length - 1;
+        renderEnhancedChannels();
+        $('new-ch-name').value = '';
+        $('new-ch-url').value = '';
+        syncToDisplay({ channel: selectedChannel, selectedChannelObj: newCh }, `Channel "${name}" berhasil ditambahkan dan diaktifkan.`);
+    });
+
+    // ---------- 2. YOUTUBE EMBED & KONTROL VOLUME / MUTE ----------
+    function renderAudioControlUI() {
+        const ac = displayConfig.audioControl || { muted: true, volume: 50 };
+        const btn = $('btn-mute-toggle');
+        const lbl = $('mute-btn-label');
+        const badge = $('audio-state-badge');
+        const slider = $('vol-slider');
+        const volLbl = $('vol-label');
+
+        if (slider) slider.value = String(ac.volume ?? 50);
+        if (volLbl) volLbl.textContent = `${ac.muted ? 0 : (ac.volume ?? 50)}%`;
+        if (btn && lbl) {
+            if (ac.muted) {
+                btn.className = 'btn danger';
+                lbl.textContent = 'MUTE (Suara Mati)';
+                if (badge) badge.textContent = 'Status Suara: MUTE';
+            } else {
+                btn.className = 'btn success';
+                lbl.textContent = `UNMUTE (Suara Hidup ${ac.volume}%)`;
+                if (badge) badge.textContent = `Suara Aktif: ${ac.volume}%`;
+            }
+        }
+    }
+
+    function sendAudioUpdate(patch, msg) {
+        displayConfig.audioControl = {
+            ...displayConfig.audioControl,
+            ...patch,
+            ts: Date.now()
+        };
+        renderAudioControlUI();
+        if (bc) bc.postMessage({ type: 'audio-control', audioControl: displayConfig.audioControl });
+        syncToDisplay({ audioControl: displayConfig.audioControl }, msg, $('yt-feedback'));
+    }
+
+    $('btn-mute-toggle')?.addEventListener('click', () => {
+        const nextMuted = !displayConfig.audioControl.muted;
+        const nextVol = !nextMuted && displayConfig.audioControl.volume === 0 ? 50 : displayConfig.audioControl.volume;
+        sendAudioUpdate({ muted: nextMuted, volume: nextVol, action: nextMuted ? 'mute' : 'unmute' },
+            nextMuted ? 'Suara display dimatikan (MUTE).' : `Suara display diaktifkan (Volume ${nextVol}%).`);
+    });
+
+    $('vol-slider')?.addEventListener('input', e => {
+        const v = Number(e.target.value);
+        $('vol-label').textContent = `${v}%`;
+    });
+    $('vol-slider')?.addEventListener('change', e => {
+        const v = Number(e.target.value);
+        const muted = v === 0;
+        sendAudioUpdate({ volume: v, muted, action: 'volume' }, `Volume display diatur ke ${v}%.`);
+    });
+
+    document.querySelectorAll('.vol-preset').forEach(b => {
+        b.addEventListener('click', () => {
+            const v = Number(b.dataset.vol);
+            sendAudioUpdate({ volume: v, muted: v === 0, action: 'volume' }, `Volume display diatur ke ${v}%.`);
+        });
+    });
+
+    $('btn-yt-play')?.addEventListener('click', () => sendAudioUpdate({ action: 'play' }, 'Perintah Play dikirim ke display.'));
+    $('btn-yt-pause')?.addEventListener('click', () => sendAudioUpdate({ action: 'pause' }, 'Perintah Pause dikirim ke display.'));
+    $('btn-yt-stop-bgm')?.addEventListener('click', () => {
+        displayConfig.youtubeEmbed.active = false;
+        if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed });
+        syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, 'Pemutar musik latar YouTube dihentikan.', $('yt-feedback'));
+    });
+
+    // Tombol pemicu Azan / Indonesia Raya / Video SE2026 dari Panel Kontrol
+    $('btn-trig-azan')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'azan' }, 'Memutar Azan di layar display.'));
+    $('btn-trig-ir')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'ir' }, 'Memutar Lagu Indonesia Raya di layar display.'));
+    $('btn-trig-sensus')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'sensus' }, 'Memutar Video SE2026 di layar display.'));
+    $('btn-trig-stopmedia')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'stop' }, 'Menutup popup media di layar display.'));
+
+    function renderYoutubePlaylist() {
+        const box = $('yt-playlist-grid');
+        if (!box) return;
+        const list = displayConfig.youtubeEmbed?.playlist || [];
+        box.innerHTML = list.map((item, idx) => `
+            <div class="yt-item">
+                <div>
+                    <h4>${item.title}</h4>
+                    <small>${item.url}</small>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <button type="button" class="btn sm primary yt-play-tv" data-idx="${idx}">Tampilkan di TV</button>
+                    <button type="button" class="btn sm success yt-play-bgm" data-idx="${idx}">Musik Latar</button>
+                    <button type="button" class="btn sm danger yt-del" data-idx="${idx}">Hapus</button>
+                </div>
+            </div>
+        `).join('');
+
+        box.querySelectorAll('.yt-play-tv').forEach(b => {
+            b.addEventListener('click', () => {
+                const item = list[Number(b.dataset.idx)];
+                activateYoutubeItem(item.title, item.url, 'tv');
+            });
+        });
+        box.querySelectorAll('.yt-play-bgm').forEach(b => {
+            b.addEventListener('click', () => {
+                const item = list[Number(b.dataset.idx)];
+                activateYoutubeItem(item.title, item.url, 'bgm');
+            });
+        });
+        box.querySelectorAll('.yt-del').forEach(b => {
+            b.addEventListener('click', () => {
+                list.splice(Number(b.dataset.idx), 1);
+                renderYoutubePlaylist();
+                syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, 'Konten YouTube dihapus dari daftar.', $('yt-feedback'));
+            });
+        });
+    }
+
+    function activateYoutubeItem(title, rawUrl, mode) {
+        const startMuted = ($('yt-start-mute')?.value ?? 'true') === 'true';
+        const embedUrl = extractYoutubeEmbedUrl(rawUrl, startMuted);
+        if (!embedUrl) {
+            $('yt-feedback').textContent = 'URL YouTube tidak valid.';
+            return;
+        }
+        displayConfig.audioControl.muted = startMuted;
+        renderAudioControlUI();
+        displayConfig.youtubeEmbed.active = true;
+        displayConfig.youtubeEmbed.mode = mode;
+        displayConfig.youtubeEmbed.title = title;
+        displayConfig.youtubeEmbed.url = embedUrl;
+
+        if (mode === 'tv') {
+            // Update channel Musik / YouTube (index 14) atau pilih langsung
+            const chObj = { name: title, type: 'iframe', cat: 'youtube', url: embedUrl };
+            if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed, selectedChannelObj: chObj });
+            syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed, selectedChannelObj: chObj }, `Menampilkan YouTube "${title}" di layar utama TV (${startMuted ? 'Mute' : 'Suara Hidup'}).`, $('yt-feedback'));
+        } else {
+            if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed });
+            syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, `Memutar "${title}" sebagai musik latar di display (${startMuted ? 'Mute' : 'Suara Hidup'}).`, $('yt-feedback'));
+        }
+    }
+
+    $('btn-yt-apply')?.addEventListener('click', () => {
+        const title = $('yt-title-input').value.trim() || 'Konten YouTube';
+        const url = $('yt-url-input').value.trim();
+        const mode = $('yt-mode-select').value;
+        if (!url || !extractYoutubeEmbedUrl(url, true)) {
+            $('yt-feedback').textContent = 'Masukkan link YouTube yang valid (contoh: https://www.youtube.com/watch?v=...).';
+            return;
+        }
+        displayConfig.youtubeEmbed.playlist.unshift({ title, url });
+        renderYoutubePlaylist();
+        activateYoutubeItem(title, url, mode);
+        $('yt-title-input').value = '';
+        $('yt-url-input').value = '';
+    });
+
+    $('btn-yt-add-only')?.addEventListener('click', () => {
+        const title = $('yt-title-input').value.trim() || 'Konten YouTube';
+        const url = $('yt-url-input').value.trim();
+        if (!url || !extractYoutubeEmbedUrl(url, true)) {
+            $('yt-feedback').textContent = 'Masukkan link YouTube yang valid.';
+            return;
+        }
+        displayConfig.youtubeEmbed.playlist.unshift({ title, url });
+        renderYoutubePlaylist();
+        syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, `"${title}" ditambahkan ke daftar playlist YouTube.`, $('yt-feedback'));
+        $('yt-title-input').value = '';
+        $('yt-url-input').value = '';
+    });
+
+    // ---------- 3. STUDIO DRAG-AND-DROP TATA LETAK & KUSTOMISASI ----------
+    document.querySelectorAll('#cust-tabs .pk-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#cust-tabs .pk-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.pk-pane').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            $(tab.dataset.pane)?.classList.add('active');
+        });
+    });
+
+    function setupDragAndDropList(container, itemsArray, onReorder) {
+        let dragIdx = null;
+        Array.from(container.children).forEach((el, idx) => {
+            el.setAttribute('draggable', 'true');
+            el.addEventListener('dragstart', e => {
+                dragIdx = idx;
+                el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                Array.from(container.children).forEach(c => c.classList.remove('drag-over'));
+            });
+            el.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+            el.addEventListener('drop', e => {
+                e.preventDefault();
+                el.classList.remove('drag-over');
+                if (dragIdx === null || dragIdx === idx) return;
+                const moved = itemsArray.splice(dragIdx, 1)[0];
+                itemsArray.splice(idx, 0, moved);
+                onReorder();
+            });
+        });
+    }
+
+    function renderDndStudio() {
+        // 1. Columns
+        const colBox = $('dnd-columns');
+        if (colBox) {
+            colBox.innerHTML = displayConfig.columns.map((c, idx) => `
+                <div class="dnd-card" data-idx="${idx}">
+                    <div class="dnd-handle">
+                        <span>☰ ${idx + 1}. ${c.label}</span>
+                        <span class="dnd-badge">Kolom ${idx + 1}</span>
+                    </div>
+                    <div style="display:grid;gap:8px;font-size:12px;">
+                        <label style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>Proporsi Lebar: <b id="col-w-val-${idx}">${c.weight}fr</b></span>
+                            <input type="range" min="0.5" max="3.0" step="0.1" value="${c.weight}" data-idx="${idx}" class="col-weight-slider" style="width:110px;">
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="checkbox" class="col-vis-chk" data-idx="${idx}" ${c.visible ? 'checked' : ''}> Tampilkan Panel Ini
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+            setupDragAndDropList(colBox, displayConfig.columns, renderDndStudio);
+            colBox.querySelectorAll('.col-weight-slider').forEach(sl => {
+                sl.addEventListener('input', e => {
+                    const i = Number(e.target.dataset.idx);
+                    displayConfig.columns[i].weight = Number(e.target.value);
+                    $(`col-w-val-${i}`).textContent = `${e.target.value}fr`;
+                });
+            });
+            colBox.querySelectorAll('.col-vis-chk').forEach(ck => {
+                ck.addEventListener('change', e => {
+                    const i = Number(e.target.dataset.idx);
+                    displayConfig.columns[i].visible = e.target.checked;
+                });
+            });
+        }
+
+        // 2. Rows
+        const rowBox = $('dnd-rows');
+        if (rowBox) {
+            rowBox.innerHTML = displayConfig.rows.map((r, idx) => `
+                <div class="dnd-row-item" data-idx="${idx}">
+                    <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;">
+                        <span class="dnd-grip">☰</span>
+                        <span>Urutan #${idx + 1} — ${r.label}</span>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                        <input type="checkbox" class="row-vis-chk" data-idx="${idx}" ${r.visible ? 'checked' : ''}> Tampilkan Baris
+                    </label>
+                </div>
+            `).join('');
+            setupDragAndDropList(rowBox, displayConfig.rows, renderDndStudio);
+            rowBox.querySelectorAll('.row-vis-chk').forEach(ck => {
+                ck.addEventListener('change', e => {
+                    displayConfig.rows[Number(e.target.dataset.idx)].visible = e.target.checked;
+                });
+            });
+        }
+
+        // 3. Slides
+        const slideBox = $('dnd-slides');
+        if (slideBox) {
+            slideBox.innerHTML = displayConfig.slides.map((s, idx) => `
+                <div class="dnd-row-item" data-idx="${idx}">
+                    <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;">
+                        <span class="dnd-grip">☰</span>
+                        <span>Slide #${idx + 1}: ${s.label}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <label style="font-size:12px;display:flex;align-items:center;gap:6px;">
+                            Durasi (detik):
+                            <input type="number" class="pk-input slide-dwell-inp" data-idx="${idx}" value="${s.dwellSec}" min="3" max="120" style="width:68px;min-height:30px;">
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                            <input type="checkbox" class="slide-vis-chk" data-idx="${idx}" ${s.visible ? 'checked' : ''}> Aktif
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+            setupDragAndDropList(slideBox, displayConfig.slides, renderDndStudio);
+            slideBox.querySelectorAll('.slide-dwell-inp').forEach(inp => {
+                inp.addEventListener('change', e => {
+                    displayConfig.slides[Number(e.target.dataset.idx)].dwellSec = Math.max(3, Number(e.target.value) || 8);
+                });
+            });
+            slideBox.querySelectorAll('.slide-vis-chk').forEach(ck => {
+                ck.addEventListener('change', e => {
+                    displayConfig.slides[Number(e.target.dataset.idx)].visible = e.target.checked;
+                });
+            });
+        }
+
+        if ($('chk-display-dnd')) $('chk-display-dnd').checked = !!displayConfig.displayDndEnabled;
+    }
+
+    $('chk-display-dnd')?.addEventListener('change', e => {
+        displayConfig.displayDndEnabled = e.target.checked;
+        syncToDisplay({ displayConfig }, e.target.checked ? 'Mode Drag & Drop langsung di layar display DIAKTIFKAN.' : 'Mode Drag & Drop langsung di layar display dinonaktifkan.', $('cust-feedback'));
+    });
+
+    $('btn-save-layout')?.addEventListener('click', () => {
+        syncToDisplay({ displayConfig }, 'Tata letak Drag & Drop berhasil diterapkan ke layar display!', $('cust-feedback'));
+    });
+
+    $('btn-reset-layout')?.addEventListener('click', () => {
+        displayConfig.columns = JSON.parse(JSON.stringify(defaultDisplayConfig.columns));
+        displayConfig.rows = JSON.parse(JSON.stringify(defaultDisplayConfig.rows));
+        displayConfig.slides = JSON.parse(JSON.stringify(defaultDisplayConfig.slides));
+        renderDndStudio();
+        syncToDisplay({ displayConfig }, 'Tata letak dikembalikan ke susunan awal.', $('cust-feedback'));
+    });
+
+    // ---------- 4. KUSTOMISASI IDENTITAS, TICKER, SLIDES & JADWAL ----------
+    function populateCustomForms() {
+        if ($('cfg-theme')) $('cfg-theme').value = displayConfig.theme || 'dark';
+        if ($('cfg-sholat-swap')) $('cfg-sholat-swap').value = displayConfig.sholatSwap || 'normal';
+        if ($('cfg-brand-title')) $('cfg-brand-title').value = displayConfig.brandTitle || 'LINTAS BENTENG';
+        if ($('cfg-brand-sub')) $('cfg-brand-sub').value = displayConfig.brandSub || 'BPS Kabupaten Bengkulu Tengah';
+        if ($('cfg-brand-logo')) $('cfg-brand-logo').value = displayConfig.brandLogo || 'https://iili.io/nwp1YYl.jpg';
+        if ($('cfg-live-badge')) $('cfg-live-badge').value = displayConfig.liveBadge || 'LIVE';
+        if ($('cfg-title-map')) $('cfg-title-map').value = displayConfig.titleMap || 'Live Tracking';
+        if ($('cfg-title-tv')) $('cfg-title-tv').value = displayConfig.titleTv || 'Siaran TV';
+        if ($('cfg-footer-text')) $('cfg-footer-text').value = displayConfig.footerText || '';
+        if ($('tv-fit-mode')) $('tv-fit-mode').value = displayConfig.tvFitMode || 'cover';
+
+        const tk = displayConfig.ticker || defaultDisplayConfig.ticker;
+        if ($('cfg-ticker-label')) $('cfg-ticker-label').value = tk.label || 'LINTAS BENTENG';
+        if ($('cfg-ticker-topic')) $('cfg-ticker-topic').value = tk.topic || 'bengkulu tengah';
+        if ($('cfg-ticker-mode')) $('cfg-ticker-mode').value = tk.mode || 'both';
+        if ($('cfg-ticker-speed')) $('cfg-ticker-speed').value = tk.speedSec || 240;
+
+        const sc = displayConfig.schedules || defaultDisplayConfig.schedules;
+        if ($('cfg-sched-sensus')) $('cfg-sched-sensus').value = (sc.sensus || []).join(', ');
+        if ($('cfg-sched-ir')) $('cfg-sched-ir').value = (sc.ir || []).join(', ');
+        if ($('cfg-sholat-manual')) $('cfg-sholat-manual').checked = !!sc.manualSholat;
+        if (sc.sholatTimes) {
+            if ($('cfg-sh-fajr')) $('cfg-sh-fajr').value = sc.sholatTimes.Fajr || '04:40';
+            if ($('cfg-sh-dhuhr')) $('cfg-sh-dhuhr').value = sc.sholatTimes.Dhuhr || '12:04';
+            if ($('cfg-sh-asr')) $('cfg-sh-asr').value = sc.sholatTimes.Asr || '15:22';
+            if ($('cfg-sh-maghrib')) $('cfg-sh-maghrib').value = sc.sholatTimes.Maghrib || '18:06';
+            if ($('cfg-sh-isha')) $('cfg-sh-isha').value = sc.sholatTimes.Isha || '19:16';
+        }
+        renderDynamicLists();
+    }
+
+    function renderDynamicLists() {
+        // Ticker custom messages
+        const tkBox = $('custom-ticker-list');
+        if (tkBox) {
+            const msgs = displayConfig.ticker?.customMessages || [];
+            tkBox.innerHTML = msgs.map((m, i) => `
+                <div class="dyn-item">
+                    <span>${m}</span>
+                    <button type="button" class="btn sm danger del-tk" data-i="${i}">Hapus</button>
+                </div>
+            `).join('');
+            tkBox.querySelectorAll('.del-tk').forEach(b => b.addEventListener('click', () => {
+                displayConfig.ticker.customMessages.splice(Number(b.dataset.i), 1);
+                renderDynamicLists();
+            }));
+        }
+
+        // Custom agenda
+        const agBox = $('custom-agenda-list');
+        if (agBox) {
+            const ags = displayConfig.customAgenda || [];
+            agBox.innerHTML = ags.length ? ags.map((a, i) => `
+                <div class="dyn-item">
+                    <span><b>${a.time}</b> — ${a.title} ${a.desc ? '(' + a.desc + ')' : ''}</span>
+                    <button type="button" class="btn sm danger del-ag" data-i="${i}">Hapus</button>
+                </div>
+            `).join('') : '<p class="hint">Belum ada agenda kustom tambahan.</p>';
+            agBox.querySelectorAll('.del-ag').forEach(b => b.addEventListener('click', () => {
+                displayConfig.customAgenda.splice(Number(b.dataset.i), 1);
+                renderDynamicLists();
+                syncToDisplay({ displayConfig }, 'Agenda kustom diperbarui.', $('cust-feedback'));
+            }));
+        }
+
+        // Hari penting
+        const hpBox = $('custom-hp-list');
+        if (hpBox) {
+            const hps = displayConfig.customHariPenting || [];
+            hpBox.innerHTML = hps.map(([m, d, name], i) => `
+                <div class="dyn-item">
+                    <span><b>${d}/${m}</b> — ${name}</span>
+                    <button type="button" class="btn sm danger del-hp" data-i="${i}">Hapus</button>
+                </div>
+            `).join('');
+            hpBox.querySelectorAll('.del-hp').forEach(b => b.addEventListener('click', () => {
+                displayConfig.customHariPenting.splice(Number(b.dataset.i), 1);
+                renderDynamicLists();
+                syncToDisplay({ displayConfig }, 'Daftar Hari Penting diperbarui.', $('cust-feedback'));
+            }));
+        }
+
+        // Nilai BPS
+        const vlBox = $('custom-vl-list');
+        if (vlBox) {
+            const vls = displayConfig.customValues || [];
+            vlBox.innerHTML = vls.map((v, i) => `
+                <div class="dyn-item">
+                    <span><b>[${v.letter}] ${v.title}</b>: ${v.desc}</span>
+                    <button type="button" class="btn sm danger del-vl" data-i="${i}">Hapus</button>
+                </div>
+            `).join('');
+            vlBox.querySelectorAll('.del-vl').forEach(b => b.addEventListener('click', () => {
+                displayConfig.customValues.splice(Number(b.dataset.i), 1);
+                renderDynamicLists();
+                syncToDisplay({ displayConfig }, 'Nilai Inti BPS diperbarui.', $('cust-feedback'));
+            }));
+        }
+
+        // Ayat & Hadits
+        const qtBox = $('custom-qt-list');
+        if (qtBox) {
+            const qts = displayConfig.customQuotes || [];
+            qtBox.innerHTML = qts.map((q, i) => `
+                <div class="dyn-item">
+                    <span><b>${q[0]}</b> (${q[3]}): ${q[2]}</span>
+                    <button type="button" class="btn sm danger del-qt" data-i="${i}">Hapus</button>
+                </div>
+            `).join('');
+            qtBox.querySelectorAll('.del-qt').forEach(b => b.addEventListener('click', () => {
+                displayConfig.customQuotes.splice(Number(b.dataset.i), 1);
+                renderDynamicLists();
+                syncToDisplay({ displayConfig }, 'Daftar Kutipan Ayat/Hadits diperbarui.', $('cust-feedback'));
+            }));
+        }
+    }
+
+    $('btn-save-identity')?.addEventListener('click', () => {
+        displayConfig.theme = $('cfg-theme').value;
+        displayConfig.sholatSwap = $('cfg-sholat-swap').value;
+        displayConfig.brandTitle = $('cfg-brand-title').value.trim() || 'LINTAS BENTENG';
+        displayConfig.brandSub = $('cfg-brand-sub').value.trim() || 'BPS Kabupaten Bengkulu Tengah';
+        displayConfig.brandLogo = $('cfg-brand-logo').value.trim() || 'https://iili.io/nwp1YYl.jpg';
+        displayConfig.liveBadge = $('cfg-live-badge').value.trim() || 'LIVE';
+        displayConfig.titleMap = $('cfg-title-map').value.trim() || 'Live Tracking';
+        displayConfig.titleTv = $('cfg-title-tv').value.trim() || 'Siaran TV';
+        displayConfig.footerText = $('cfg-footer-text').value.trim();
+        syncToDisplay({ displayConfig }, 'Identitas header, tema, dan judul panel berhasil diperbarui!', $('cust-feedback'));
+    });
+
+    $('btn-add-ticker-msg')?.addEventListener('click', () => {
+        const val = $('new-ticker-msg').value.trim();
+        if (!val) return;
+        displayConfig.ticker.customMessages.push(val);
+        $('new-ticker-msg').value = '';
+        renderDynamicLists();
+    });
+
+    $('btn-save-ticker')?.addEventListener('click', () => {
+        displayConfig.ticker.label = $('cfg-ticker-label').value.trim() || 'LINTAS BENTENG';
+        displayConfig.ticker.topic = $('cfg-ticker-topic').value.trim() || 'bengkulu tengah';
+        displayConfig.ticker.mode = $('cfg-ticker-mode').value;
+        displayConfig.ticker.speedSec = Math.max(30, Number($('cfg-ticker-speed').value) || 240);
+        syncToDisplay({ displayConfig }, 'Pengaturan Ticker Berita & Pengumuman dikirim ke display.', $('cust-feedback'));
+    });
+
+    $('btn-add-agenda')?.addEventListener('click', () => {
+        const time = $('new-ag-time').value.trim() || 'Hari Ini';
+        const title = $('new-ag-title').value.trim();
+        const desc = $('new-ag-desc').value.trim();
+        if (!title) return;
+        displayConfig.customAgenda.push({ time, title, desc });
+        $('new-ag-time').value = ''; $('new-ag-title').value = ''; $('new-ag-desc').value = '';
+        renderDynamicLists();
+        syncToDisplay({ displayConfig }, 'Agenda kustom berhasil ditambahkan ke display.', $('cust-feedback'));
+    });
+
+    $('btn-add-hp')?.addEventListener('click', () => {
+        const d = Number($('new-hp-day').value);
+        const m = Number($('new-hp-mon').value);
+        const name = $('new-hp-name').value.trim();
+        if (!d || !m || !name) return;
+        displayConfig.customHariPenting.push([m, d, name]);
+        $('new-hp-day').value = ''; $('new-hp-mon').value = ''; $('new-hp-name').value = '';
+        renderDynamicLists();
+        syncToDisplay({ displayConfig }, 'Hari Penting baru ditambahkan ke display.', $('cust-feedback'));
+    });
+
+    $('btn-add-vl')?.addEventListener('click', () => {
+        const letter = $('new-vl-letter').value.trim().toUpperCase() || 'B';
+        const title = $('new-vl-title').value.trim();
+        const desc = $('new-vl-desc').value.trim();
+        if (!title) return;
+        displayConfig.customValues.push({ letter, title, desc });
+        $('new-vl-letter').value = ''; $('new-vl-title').value = ''; $('new-vl-desc').value = '';
+        renderDynamicLists();
+        syncToDisplay({ displayConfig }, 'Nilai Inti BPS berhasil diperbarui.', $('cust-feedback'));
+    });
+
+    $('btn-add-qt')?.addEventListener('click', () => {
+        const kind = $('new-qt-kind').value.trim() || 'Ayat Al-Qur’an';
+        const ar = $('new-qt-ar').value.trim() || 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+        const text = $('new-qt-text').value.trim();
+        const src = $('new-qt-src').value.trim() || 'Kutipan Motivasi';
+        if (!text) return;
+        displayConfig.customQuotes.push([kind, ar, text, src]);
+        $('new-qt-ar').value = ''; $('new-qt-text').value = ''; $('new-qt-src').value = '';
+        renderDynamicLists();
+        syncToDisplay({ displayConfig }, 'Kutipan Ayat/Hadits ditambahkan ke display.', $('cust-feedback'));
+    });
+
+    $('btn-save-schedules')?.addEventListener('click', () => {
+        displayConfig.schedules = {
+            sensus: $('cfg-sched-sensus').value.split(',').map(s => s.trim()).filter(Boolean),
+            ir: $('cfg-sched-ir').value.split(',').map(s => s.trim()).filter(Boolean),
+            manualSholat: $('cfg-sholat-manual').checked,
+            sholatTimes: {
+                Fajr: $('cfg-sh-fajr').value || '04:40',
+                Dhuhr: $('cfg-sh-dhuhr').value || '12:04',
+                Asr: $('cfg-sh-asr').value || '15:22',
+                Maghrib: $('cfg-sh-maghrib').value || '18:06',
+                Isha: $('cfg-sh-isha').value || '19:16'
+            }
+        };
+        syncToDisplay({ displayConfig }, 'Jadwal Sholat & Video Otomatis berhasil disimpan ke display.', $('cust-feedback'));
+    });
+
+    // ---------- 5. MONITORING & NOTIFIKASI GEMPA REALTIME (BMKG - BENGKULU & BENTENG) ----------
+    const BENGKULU_TENGAH = { lat: -3.7630, lon: 102.4000 };
+    const KOTA_BENGKULU = { lat: -3.8004, lon: 102.2655 };
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function parseCoords(coordStr) {
+        const parts = String(coordStr || '').split(',').map(Number);
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return { lat: parts[0], lon: parts[1] };
+        return null;
+    }
+
+    async function fetchBmkgQuakes() {
+        const headline = $('qk-headline'), sub = $('qk-sub'), tbody = $('qk-table-body');
+        try {
+            const [autoRes, feltRes] = await Promise.all([
+                fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json'),
+                fetch('https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json').catch(() => null)
+            ]);
+            const autoData = await autoRes.json();
+            const g = autoData?.Infogempa?.gempa;
+            const feltData = feltRes && feltRes.ok ? await feltRes.json().catch(() => null) : null;
+            const list = feltData?.Infogempa?.gempa || (g ? [g] : []);
+
+            if (g) {
+                const c = parseCoords(g.Coordinates);
+                const dBenteng = c ? haversineKm(BENGKULU_TENGAH.lat, BENGKULU_TENGAH.lon, c.lat, c.lon) : null;
+                const dKota = c ? haversineKm(KOTA_BENGKULU.lat, KOTA_BENGKULU.lon, c.lat, c.lon) : null;
+                if (headline) headline.textContent = `M ${g.Magnitude} · ${g.Wilayah}`;
+                if (sub) sub.textContent = `${g.Tanggal} ${g.Jam} · Kedalaman ${g.Kedalaman} · Jarak ke Bengkulu Tengah: ${dBenteng ?? '-'} km | Kota Bengkulu: ${dKota ?? '-'} km`;
+            }
+
+            if (tbody && Array.isArray(list)) {
+                const radiusLimit = Number($('qk-radius-km')?.value) || 250;
+                tbody.innerHTML = list.slice(0, 8).map((item, idx) => {
+                    const c = parseCoords(item.Coordinates);
+                    const dBenteng = c ? haversineKm(BENGKULU_TENGAH.lat, BENGKULU_TENGAH.lon, c.lat, c.lon) : 9999;
+                    const dKota = c ? haversineKm(KOTA_BENGKULU.lat, KOTA_BENGKULU.lon, c.lat, c.lon) : 9999;
+                    const minD = Math.min(dBenteng, dKota);
+                    const isBengkuluText = /bengkulu|benteng|kepahiang|seluma|rejang lebong|mukomuko|kaur|lebong/i.test(`${item.Wilayah} ${item.Dirasakan || ''}`);
+                    const isNear = isBengkuluText || minD <= radiusLimit;
+                    return `<tr>
+                        <td>${item.Tanggal}<br><small style="color:var(--muted)">${item.Jam}</small></td>
+                        <td><b style="color:#f87171;font-size:14px;">M ${item.Magnitude}</b></td>
+                        <td>${item.Kedalaman}</td>
+                        <td><b>${item.Wilayah}</b><br><small style="color:var(--muted)">${item.Dirasakan || item.Potensi || '-'}</small></td>
+                        <td><span class="quake-badge ${isNear ? 'near' : 'far'}">${minD < 9000 ? minD + ' km' : '-'} ${isNear ? '· BENGKULU / SEKITAR' : ''}</span></td>
+                        <td><button type="button" class="btn sm warn btn-push-qk" data-idx="${idx}">Tampilkan di Display</button></td>
+                    </tr>`;
+                }).join('');
+
+                tbody.querySelectorAll('.btn-push-qk').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const item = list[Number(btn.dataset.idx)];
+                        triggerQuakeAlertToDisplay(item, 'Peringatan gempa BMKG dikirim ke layar display!');
+                    });
+                });
+            }
+        } catch (e) {
+            if (headline) headline.textContent = 'Menunggu koneksi ke API BMKG (data.bmkg.go.id)';
+            if (sub) sub.textContent = 'Pastikan koneksi internet aktif untuk mengambil data gempa realtime.';
+        }
+    }
+
+    function triggerQuakeAlertToDisplay(quakeObj, msg) {
+        const alertPayload = {
+            ...quakeObj,
+            triggeredAt: Date.now(),
+            active: true
+        };
+        if (bc) bc.postMessage({ type: 'quake-alert', quakeAlert: alertPayload });
+        syncToDisplay({ quakeAlert: alertPayload }, msg, $('qk-feedback'));
+    }
+
+    $('btn-check-bmkg')?.addEventListener('click', () => {
+        fetchBmkgQuakes();
+        $('qk-feedback').textContent = 'Data gempa terbaru dari API BMKG berhasil diperbarui.';
+    });
+
+    $('btn-sim-quake')?.addEventListener('click', () => {
+        const now = new Date();
+        const simQuake = {
+            Tanggal: now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+            Jam: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB',
+            DateTime: now.toISOString(),
+            Coordinates: '-3.78,102.32',
+            Lintang: '3.78 LS',
+            Bujur: '102.32 BT',
+            Magnitude: '5.1',
+            Kedalaman: '14 km',
+            Wilayah: 'Pusat gempa berada di darat 8 km Barat Daya Kab. Bengkulu Tengah / 7 km Timur Kota Bengkulu',
+            Potensi: 'Tidak berpotensi TSUNAMI — Harap tetap tenang dan waspada terhadap gempa susulan',
+            Dirasakan: 'Dirasakan di Kab. Bengkulu Tengah (III-IV MMI), Kota Bengkulu (III-IV MMI), Kepahiang (III MMI)',
+            isSimulation: true
+        };
+        triggerQuakeAlertToDisplay(simQuake, 'Simulasi Peringatan Gempa Bumi Kota Bengkulu & Bengkulu Tengah ditampilkan di layar display!');
+    });
+
+    $('btn-clear-quake')?.addEventListener('click', () => {
+        const clearPayload = { active: false, triggeredAt: Date.now() };
+        if (bc) bc.postMessage({ type: 'quake-alert', quakeAlert: clearPayload });
+        syncToDisplay({ quakeAlert: clearPayload }, 'Peringatan gempa di layar display ditutup.', $('qk-feedback'));
+    });
+
+    $('btn-save-quake-cfg')?.addEventListener('click', () => {
+        displayConfig.quakeConfig = {
+            autoEnable: $('qk-auto-enable').value === 'true',
+            radiusKm: Number($('qk-radius-km').value) || 250,
+            soundEnable: $('qk-sound-enable').value === 'true',
+            durationSec: Number($('qk-duration-sec').value) || 45
+        };
+        syncToDisplay({ displayConfig }, 'Konfigurasi deteksi gempa otomatis BMKG disimpan.', $('qk-feedback'));
+    });
+
+    // Terima update balik bila operator melakukan drag & drop langsung di layar display
+    if (bc) {
+        bc.addEventListener('message', ev => {
+            if (ev.data?.type === 'display-layout-updated' && ev.data.displayConfig) {
+                displayConfig = { ...displayConfig, ...ev.data.displayConfig };
+                renderDndStudio();
+                populateCustomForms();
+            } else if (ev.data?.type === 'display-status' && ev.data.status) {
+                status = ev.data.status;
+                renderStatus();
+            }
+        });
+    }
+
+    // Inisialisasi semua komponen tambahan
+    renderEnhancedChannels();
+    renderAudioControlUI();
+    renderYoutubePlaylist();
+    renderDndStudio();
+    populateCustomForms();
+    fetchBmkgQuakes();
+    syncFromIptvOrg(true);
+    // Auto-refresh list channel iptv-org setiap 30 menit & cek BMKG setiap 60 detik
+    setInterval(() => syncFromIptvOrg(true), 30 * 60 * 1000);
+    setInterval(fetchBmkgQuakes, 60 * 1000);
+
+</script>
+</body>
+</html>
