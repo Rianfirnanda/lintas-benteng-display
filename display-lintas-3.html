@@ -875,7 +875,7 @@
 
 <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getAuth, onAuthStateChanged, signInAnonymously, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
     const app = initializeApp({
@@ -916,7 +916,9 @@
         if (!user) {
             $('sidebarEmail').textContent = 'Guest';
             $('avatarLetter').textContent = 'G';
-            startListeners();
+            signInAnonymously(auth).catch(e => {
+                feedback.textContent = 'Firebase belum terhubung: ' + e.code + '. Periksa izin domain pada API key Firebase.';
+            });
             return;
         }
         $('sidebarEmail').textContent = user.email || 'Guest';
@@ -970,12 +972,13 @@
     }
 
     async function writeMain(patch, okMsg, target = feedback) {
+        try { bc?.postMessage({ type: 'full-sync', patch, ts: Date.now() }); } catch (e) {}
         try {
             await setDoc(mainRef, { ...patch, updatedAt: Date.now() }, { merge: true });
             if (target) target.textContent = okMsg;
         } catch (e) {
             console.error(e);
-            if (target) target.textContent = 'Gagal menyimpan: ' + (e.code || e.message);
+            if (target) target.textContent = 'Firebase belum terhubung: ' + (e.code || e.message) + '. Perintah lokal dikirim ke tab display pada browser ini.';
         }
     }
 
@@ -1039,7 +1042,10 @@
     });
 
     // ---------- realtime ----------
+    let listenersStarted = false;
     function startListeners() {
+        if (listenersStarted) return;
+        listenersStarted = true;
         onSnapshot(mainRef, snap => {
             const d = snap.data() || {};
             if (Number.isInteger(d.channel) && d.channel >= 0 && d.channel < channels.length) selectedChannel = d.channel;
@@ -1047,7 +1053,11 @@
             if (!eoqForm.contains(document.activeElement)) fillEoqForm(d.eoq);
         }, err => { feedback.textContent = 'Gagal membaca: ' + err.code; });
 
-        onSnapshot(statusRef, snap => { status = snap.data() || null; renderStatus(); });
+        onSnapshot(statusRef, snap => {
+            const remote = snap.data();
+            if (remote && (!status || remote.heartbeat > status.heartbeat)) status = remote;
+            renderStatus();
+        }, err => { feedback.textContent = 'Koneksi Firebase: ' + err.code; });
         setInterval(renderStatus, 5000);
     }
 
@@ -1065,6 +1075,23 @@
     // =========================================================================
 
     const bc = 'BroadcastChannel' in window ? new BroadcastChannel('lintasbenteng-display-control') : null;
+    function receiveDisplayStatus(next) {
+        if (next && Number.isFinite(next.heartbeat) && (!status || next.heartbeat >= status.heartbeat)) {
+            status = next;
+            renderStatus();
+        }
+    }
+    bc?.addEventListener('message', event => {
+        if (event.data?.type === 'display-status') receiveDisplayStatus(event.data.status);
+    });
+    window.addEventListener('storage', event => {
+        if (event.key === 'lintasbenteng-display-status' && event.newValue) {
+            try { receiveDisplayStatus(JSON.parse(event.newValue)); } catch (e) {}
+        }
+    });
+    try { receiveDisplayStatus(JSON.parse(localStorage.getItem('lintasbenteng-display-status') || 'null')); } catch (e) {}
+    bc?.postMessage({ type: 'status-request' });
+    setInterval(renderStatus, 5000);
     const LOCAL_CFG_KEY = 'lintasbenteng-display-config';
     const LOCAL_CH_KEY = 'lintasbenteng-channels-v2';
 
@@ -1214,9 +1241,6 @@
         try {
             localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify(displayConfig));
         } catch (e) {}
-        if (bc) {
-            try { bc.postMessage({ type: 'full-sync', patch, config: displayConfig, channels: fullChannelList, ts: Date.now() }); } catch (e) {}
-        }
         await writeMain({ ...patch, displayConfig }, msg, silent ? null : feedbackEl);
     }
 
@@ -1474,7 +1498,6 @@
                 selectedChannel = i;
                 renderEnhancedChannels();
                 renderStatus();
-                if (bc) bc.postMessage({ type: 'channel-select', index: i, channelObj: chosen });
                 writeMain({ channel: i, selectedChannelObj: chosen }, `Perintah pindah ke ${chosen.name} dikirim ke display.`);
             });
         });
@@ -1563,7 +1586,6 @@
             ts: Date.now()
         };
         renderAudioControlUI();
-        if (bc) bc.postMessage({ type: 'audio-control', audioControl: displayConfig.audioControl });
         syncToDisplay({ audioControl: displayConfig.audioControl }, msg, $('yt-feedback'));
     }
 
@@ -1595,7 +1617,6 @@
     $('btn-yt-pause')?.addEventListener('click', () => sendAudioUpdate({ action: 'pause' }, 'Perintah Pause dikirim ke display.'));
     $('btn-yt-stop-bgm')?.addEventListener('click', () => {
         displayConfig.youtubeEmbed.active = false;
-        if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed });
         syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, 'Pemutar musik latar YouTube dihentikan.', $('yt-feedback'));
     });
 
@@ -1661,10 +1682,8 @@
         if (mode === 'tv') {
             // Update channel Musik / YouTube (index 14) atau pilih langsung
             const chObj = { name: title, type: 'iframe', cat: 'youtube', url: embedUrl };
-            if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed, selectedChannelObj: chObj });
             syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed, selectedChannelObj: chObj }, `Menampilkan YouTube "${title}" di layar utama TV (${startMuted ? 'Mute' : 'Suara Hidup'}).`, $('yt-feedback'));
         } else {
-            if (bc) bc.postMessage({ type: 'yt-embed', youtubeEmbed: displayConfig.youtubeEmbed });
             syncToDisplay({ youtubeEmbed: displayConfig.youtubeEmbed }, `Memutar "${title}" sebagai musik latar di display (${startMuted ? 'Mute' : 'Suara Hidup'}).`, $('yt-feedback'));
         }
     }
@@ -2135,7 +2154,6 @@
             triggeredAt: Date.now(),
             active: true
         };
-        if (bc) bc.postMessage({ type: 'quake-alert', quakeAlert: alertPayload });
         syncToDisplay({ quakeAlert: alertPayload }, msg, $('qk-feedback'));
     }
 
@@ -2165,7 +2183,6 @@
 
     $('btn-clear-quake')?.addEventListener('click', () => {
         const clearPayload = { active: false, triggeredAt: Date.now() };
-        if (bc) bc.postMessage({ type: 'quake-alert', quakeAlert: clearPayload });
         syncToDisplay({ quakeAlert: clearPayload }, 'Peringatan gempa di layar display ditutup.', $('qk-feedback'));
     });
 
