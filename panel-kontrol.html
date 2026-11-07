@@ -3502,56 +3502,77 @@ const BENGKULU_TENGAH_COORD = { lat: -3.7630, lon: 102.4000 };
 const KOTA_BENGKULU_COORD = { lat: -3.8004, lon: 102.2655 };
 let lastSeenQuakeKey = localStorage.getItem('lb-last-quake-key') || '';
 let quakeCountdownTimer = null;
-let quakeSirenTimer = null;
-let quakeAudioContext = null;
 let quakeSoundPending = false;
-let quakeSpeechTimer = null;
 let activeQuake = null;
 let quakeAudioRun = 0;
-const quakeSirenNodes = new Set();
+let quakeSirenAudio = null;
+let quakeSirenUrl = null;
+let quakeNarrationAudio = null;
+let quakeNarrationUrl = null;
+let quakeNarrationRequest = null;
+let lastDeliveredQuake = '';
 function quakeAudioStatus(text) {
   const el = document.getElementById('qm-audio-status');
   if (el) el.textContent = text;
 }
-function selectQuakeVoice(voices) {
-  return voices.filter(v => /^id(?:-|_|$)/i.test(v.lang) && !/google/i.test(`${v.name} ${v.voiceURI || ''}`))
-    .sort((a,b) => {
-      const rank = v => (/natural|neural|online/i.test(v.name) ? 4 : 0) + (/microsoft/i.test(v.name) ? 2 : 0);
-      return rank(b) - rank(a);
-    })[0] || null;
+function createQuakeSiren() {
+  if (quakeSirenAudio) return quakeSirenAudio;
+  // PCM WAV works without a running Web Audio context or any external asset.
+  const rate = 22050, duration = 6, count = rate * duration;
+  const buffer = new ArrayBuffer(44 + count * 2), view = new DataView(buffer);
+  const tag = (offset,text) => [...text].forEach((c,i)=>view.setUint8(offset+i,c.charCodeAt(0)));
+  tag(0,'RIFF'); view.setUint32(4,36+count*2,true); tag(8,'WAVE'); tag(12,'fmt ');
+  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+  view.setUint32(24,rate,true); view.setUint32(28,rate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true);
+  tag(36,'data'); view.setUint32(40,count*2,true);
+  let phase=0, phase2=0;
+  for(let i=0;i<count;i++) {
+    const t=i/rate, sweep=(1-Math.cos(2*Math.PI*t/1.9))/2;
+    phase+=2*Math.PI*(410+670*sweep)/rate;
+    phase2+=2*Math.PI*(520+840*sweep)/rate;
+    const envelope=Math.min(1,t/.12,(duration-t)/.3);
+    const sample=envelope*(.42*Math.sin(phase)+.16*Math.sin(2*phase)+.22*Math.sin(phase2)+.10*Math.sin(2*Math.PI*155*t));
+    view.setInt16(44+i*2,Math.round(Math.max(-1,Math.min(1,sample))*32767),true);
+  }
+  quakeSirenUrl=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+  quakeSirenAudio=new Audio(quakeSirenUrl);
+  quakeSirenAudio.preload='auto'; quakeSirenAudio.volume=1;
+  return quakeSirenAudio;
 }
-async function speakQuake(q, run = quakeAudioRun) {
-  if (!q || !('speechSynthesis' in window)) {
-    quakeAudioStatus('Narasi tidak tersedia di browser ini. Sirene dan informasi visual tetap aktif.');
+function stopQuakeAudio() {
+  quakeAudioRun++;
+  quakeNarrationRequest?.abort(); quakeNarrationRequest=null;
+  [quakeSirenAudio,quakeNarrationAudio].forEach(audio=>{if(audio){audio.onended=null;audio.pause();audio.currentTime=0;}});
+  quakeNarrationAudio=null;
+  if(quakeNarrationUrl){URL.revokeObjectURL(quakeNarrationUrl);quakeNarrationUrl=null;}
+  // Cancel utterances queued by an older version; never speak through the browser engine.
+  window.speechSynthesis?.cancel();
+}
+async function speakQuake(q,run) {
+  const endpoint=String(currentDisplayConfig?.quakeConfig?.narrationEndpoint || '').trim();
+  if(!endpoint) {
+    quakeAudioStatus('Sirene selesai. Narasi non-Google belum dikonfigurasi. TTS bawaan browser dinonaktifkan.');
     return;
   }
-  let voice = selectQuakeVoice(speechSynthesis.getVoices());
-  if (!voice) {
-    // Some TVs populate the voice list asynchronously after the first interaction.
-    await new Promise(resolve => {
-      const done = () => { clearTimeout(timer); speechSynthesis.removeEventListener('voiceschanged', done); resolve(); };
-      const timer = setTimeout(done, 1200);
-      speechSynthesis.addEventListener('voiceschanged', done);
-    });
-    voice = selectQuakeVoice(speechSynthesis.getVoices());
-  }
-  if (run !== quakeAudioRun || activeQuake !== q) return;
-  if (!voice) {
-    quakeAudioStatus('Suara Indonesia non-Google belum tersedia. Pasang suara Indonesia di pengaturan suara perangkat untuk mengaktifkan narasi.');
-    return;
-  }
-  const text = `${q.isSimulation ? 'Simulasi. Ini latihan, bukan kejadian nyata.' : 'Informasi gempa dari Badan Meteorologi, Klimatologi, dan Geofisika.'} Gempa bermagnitudo ${String(q.Magnitude || '').replace('.', ' koma ')}. Kedalaman ${String(q.Kedalaman || 'belum tersedia').replace(/km/gi, 'kilometer')}. ${q.Wilayah || ''}. Guncangan yang dirasakan: ${q.Dirasakan || 'belum dilaporkan'}. ${q.Potensi || 'Informasi potensi tsunami belum tersedia.'} Magnitudo bukan ukuran guncangan di lokasi Anda. Jika terasa guncangan, merunduk, berlindung, dan berpegangan. Ikuti arahan petugas.`;
-  const speech = new SpeechSynthesisUtterance(text);
-  speech.voice = voice; speech.lang = voice.lang;
-  speech.rate = .96; speech.pitch = 1; speech.volume = 1;
-  speech.onstart = () => { if (run === quakeAudioRun) quakeAudioStatus('Narasi gempa · ' + voice.name); };
-  speech.onend = () => { if (run === quakeAudioRun) quakeAudioStatus('Narasi selesai. Tetap pantau arahan resmi BMKG.'); };
-  speech.onerror = () => { if (run === quakeAudioRun) quakeAudioStatus('Narasi gagal diputar. Informasi lengkap tersedia pada layar.'); };
-  speechSynthesis.cancel(); speechSynthesis.speak(speech);
-}
-function stopQuakeSiren() {
-  quakeSirenNodes.forEach(node => { try { node.stop(); } catch {} });
-  quakeSirenNodes.clear();
+  try {
+    const url=new URL(endpoint,location.href);
+    if(url.protocol!=='https:')throw new Error('Endpoint harus HTTPS');
+    if(/(^|\.)(google\.com|googleapis\.com|gstatic\.com)$/.test(url.hostname))throw new Error('Endpoint Google tidak diizinkan');
+    const text=`${q.isSimulation?'Simulasi. Ini latihan, bukan kejadian nyata.':'Informasi gempa dari BMKG.'} Gempa bermagnitudo ${String(q.Magnitude||'').replace('.', ' koma ')}. Kedalaman ${String(q.Kedalaman||'belum tersedia').replace(/km/gi,'kilometer')}. ${q.Wilayah||''}. ${q.Dirasakan ? 'Guncangan yang dirasakan: '+q.Dirasakan : 'Intensitas belum dilaporkan.'} ${q.Potensi||'Potensi tsunami belum tersedia.'} Magnitudo bukan ukuran guncangan di lokasi Anda. Jika terasa guncangan, merunduk, berlindung, dan berpegangan. Ikuti arahan petugas.`;
+    const controller=new AbortController();quakeNarrationRequest=controller;
+    const timeout=setTimeout(()=>controller.abort(),15000);
+    quakeAudioStatus('Menyiapkan narasi non-Google…');
+    let response;
+    try {response=await fetch(url.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language:'id-ID'}),signal:controller.signal,credentials:'omit'});}finally{clearTimeout(timeout);}
+    if(!response.ok || !response.headers.get('content-type')?.startsWith('audio/'))throw new Error('Respons audio tidak valid');
+    const blob=await response.blob();
+    if(run!==quakeAudioRun || activeQuake!==q)return;
+    if(!blob.size || blob.size>10*1024*1024)throw new Error('Ukuran audio tidak valid');
+    quakeNarrationUrl=URL.createObjectURL(blob);quakeNarrationAudio=new Audio(quakeNarrationUrl);
+    quakeNarrationAudio.onended=()=>{if(run===quakeAudioRun)quakeAudioStatus('Narasi selesai. Pantau arahan resmi BMKG.');};
+    await quakeNarrationAudio.play();
+    if(run===quakeAudioRun)quakeAudioStatus('Narasi layanan non-Google aktif.');
+  }catch(error){if(run===quakeAudioRun)quakeAudioStatus('Narasi non-Google tidak tersedia. Tidak ada pengalihan ke TTS browser.');}
 }
 
 function calcQuakeDistanceKm(lat1, lon1, lat2, lon2) {
@@ -3562,98 +3583,41 @@ function calcQuakeDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-function playEmergencySirenBeep() {
+async function startQuakeSiren() {
+  const ov=document.getElementById('quake-alert-overlay');
+  if(!ov?.classList.contains('active'))return;
+  stopQuakeAudio();
+  const run=quakeAudioRun,q=activeQuake;
+  if(currentDisplayConfig?.quakeConfig?.soundEnable===false){quakeAudioStatus('Mode tanpa suara dipilih di panel kontrol.');return;}
   try {
-    if (!quakeAudioContext || quakeAudioContext.state !== 'running') {
-      quakeSoundPending = true;
-      quakeAudioStatus('Klik layar TV sekali untuk mengizinkan sirene dan narasi.');
-      return false;
-    }
-    const ctx = quakeAudioContext, now = ctx.currentTime;
-    const master = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    const compressor = ctx.createDynamicsCompressor();
-    // Layered civil-warning wail, not a volume boost. Smooth attack and release.
-    master.gain.setValueAtTime(0, now);
-    master.gain.linearRampToValueAtTime(.16, now + .18);
-    master.gain.setValueAtTime(.16, now + 5.45);
-    master.gain.linearRampToValueAtTime(0, now + 5.9);
-    filter.type = 'lowpass'; filter.frequency.value = 2300; filter.Q.value = .6;
-    compressor.threshold.value = -18; compressor.ratio.value = 5;
-    master.connect(filter); filter.connect(compressor); compressor.connect(ctx.destination);
-    const tones = [{type:'sawtooth',base:410,peak:1080,level:.48},{type:'triangle',base:520,peak:1360,level:.34},{type:'sine',base:145,peak:190,level:.18}];
-    let remaining = tones.length;
-    tones.forEach(({type,base,peak,level}) => {
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.type = type; gain.gain.value = level;
-      osc.frequency.setValueAtTime(base,now);
-      for (let cycle=0;cycle<3;cycle++) {
-        const t = now + cycle * 1.9;
-        osc.frequency.linearRampToValueAtTime(peak,t+.85);
-        osc.frequency.linearRampToValueAtTime(base,t+1.85);
-      }
-      osc.connect(gain); gain.connect(master);
-      quakeSirenNodes.add(osc);
-      osc.onended = () => {
-        quakeSirenNodes.delete(osc); osc.disconnect(); gain.disconnect();
-        if (--remaining === 0) { master.disconnect(); filter.disconnect(); compressor.disconnect(); }
-      };
-      osc.start(now); osc.stop(now+6);
-    });
-    quakeAudioStatus('Sirene darurat aktif. Narasi akan dimulai setelah sirene.');
-    return true;
-  } catch (e) {
-    quakeAudioStatus('Sirene tidak dapat diputar. Periksa izin audio browser TV.');
-    return false;
+    const audio=createQuakeSiren();
+    audio.muted=false; audio.volume=1;
+    audio.onended=()=>{if(run===quakeAudioRun && activeQuake===q)speakQuake(q,run);};
+    await audio.play();
+    if(run!==quakeAudioRun)return;
+    quakeSoundPending=false;
+    quakeAudioStatus('Sirene darurat aktif selama 6 detik.');
+  }catch(error){
+    if(run!==quakeAudioRun)return;
+    quakeSoundPending=true;
+    quakeAudioStatus('Browser memblokir audio. Tekan tombol Putar alarm di layar TV.');
   }
 }
-function startQuakeSiren() {
-  const ov = document.getElementById('quake-alert-overlay');
-  const cfg = currentDisplayConfig?.quakeConfig || {};
-  clearTimeout(quakeSpeechTimer);
-  stopQuakeSiren();
-  window.speechSynthesis?.cancel();
-  const run = ++quakeAudioRun;
-  if (!ov?.classList.contains('active') || cfg.soundEnable === false) {
-    quakeAudioStatus('Mode tanpa suara.');
-    return;
-  }
-  if (!playEmergencySirenBeep()) return;
-  quakeSpeechTimer = setTimeout(() => {
-    if (run === quakeAudioRun && ov.classList.contains('active')) speakQuake(activeQuake,run);
-  }, 6200);
+function unlockQuakeAudio(event) {
+  if(event.target?.closest?.('#qm-play-alarm'))return;
+  if(quakeSoundPending && activeQuake)startQuakeSiren();
 }
-
-function unlockQuakeAudio() {
-  const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) return;
-  try {
-    if (!quakeAudioContext) quakeAudioContext = new Ctx();
-    if (quakeAudioContext.state === 'running') return;
-    quakeAudioContext.resume().then(() => {
-      if (quakeAudioContext.state === 'running' && quakeSoundPending) {
-        quakeSoundPending = false;
-        startQuakeSiren();
-      }
-    }).catch(() => {});
-  } catch (e) {}
-}
-['pointerdown', 'keydown', 'touchstart'].forEach(eventName =>
-  document.addEventListener(eventName, unlockQuakeAudio, { capture: true, passive: true })
-);
+['pointerdown','keydown'].forEach(name=>document.addEventListener(name,unlockQuakeAudio,{capture:true,passive:true}));
+window.addEventListener('play-quake-alarm',()=>startQuakeSiren());
+window.addEventListener('pagehide',()=>{stopQuakeAudio();if(quakeSirenUrl)URL.revokeObjectURL(quakeSirenUrl);quakeSirenUrl=null;quakeSirenAudio=null;});
 
 window.addEventListener('close-quake', hideQuakeAlertModal);
 function hideQuakeAlertModal() {
   const ov = document.getElementById('quake-alert-overlay');
   if (ov) ov.classList.remove('active');
   if (quakeCountdownTimer) clearInterval(quakeCountdownTimer);
-  if (quakeSirenTimer) clearInterval(quakeSirenTimer);
-  quakeSirenTimer = null;
   quakeSoundPending = false;
-  quakeAudioRun++;
-  stopQuakeSiren();
-  clearTimeout(quakeSpeechTimer);
-  window.speechSynthesis?.cancel();
+  stopQuakeAudio();
   activeQuake = null;
 }
 
@@ -3664,6 +3628,9 @@ function showQuakeAlertModal(q) {
   }
   const ov = document.getElementById('quake-alert-overlay');
   if (!ov) return;
+  const deliveryKey = `${q.triggeredAt || q.DateTime || q.Tanggal + '_' + q.Jam}_${q.Magnitude}_${!!q.isSimulation}`;
+  if (deliveryKey === lastDeliveredQuake) return;
+  lastDeliveredQuake = deliveryKey;
 
   let distBenteng = '--', distKota = '--';
   if (q.Coordinates) {
@@ -4126,7 +4093,7 @@ setInterval(() => {
           <div class="text-lg font-extrabold text-amber-300 mb-1" id="qm-wilayah">Pusat gempa di wilayah Bengkulu</div>
           <div class="text-sm text-gray-200 mb-2" id="qm-waktu">Waktu: --</div>
           <div class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 border border-white/15 mb-2" id="qm-dirasakan">Dirasakan: -</div>
-          <div class="text-xs font-bold text-emerald-300" id="qm-potensi">Potensi: -</div><p class="quake-guidance">Saat terasa guncangan: merunduk, berlindung, berpegangan. Jauhi kaca. Ikuti arahan petugas.</p><p id="qm-source"></p><p id="qm-audio-status" role="status" style="font-size:12px;line-height:1.6;color:#b0c1d0;margin-top:8px"></p>
+          <div class="text-xs font-bold text-emerald-300" id="qm-potensi">Potensi: -</div><p class="quake-guidance">Saat terasa guncangan: merunduk, berlindung, berpegangan. Jauhi kaca. Ikuti arahan petugas.</p><p id="qm-source"></p><button type="button" id="qm-play-alarm" style="margin-top:12px;padding:10px 16px;border:1px solid #ffffff60;border-radius:8px;background:#ffffff15;color:white;cursor:pointer">Putar alarm / izinkan audio</button><p id="qm-audio-status" role="status" style="font-size:12px;line-height:1.6;color:#b0c1d0;margin-top:8px"></p>
         </div>
         <div class="quake-shakemap" id="qm-shakemap-box">
           <img id="qm-shakemap-img" alt="Peta Guncangan BMKG" src="https://iili.io/nwp1YYl.jpg">
@@ -4134,7 +4101,7 @@ setInterval(() => {
       </div>
     </div>
   </div>
-<script>document.getElementById('qm-close').onclick = () => window.dispatchEvent(new Event('close-quake'));</script>
+<script>document.getElementById('qm-play-alarm').onclick = () => window.dispatchEvent(new Event('play-quake-alarm')); document.getElementById('qm-close').onclick = () => window.dispatchEvent(new Event('close-quake'));</script>
 </body>
 
 </html>
