@@ -3507,9 +3507,7 @@ let activeQuake = null;
 let quakeAudioRun = 0;
 let quakeSirenAudio = null;
 let quakeSirenUrl = null;
-let quakeNarrationAudio = null;
-let quakeNarrationUrl = null;
-let quakeNarrationRequest = null;
+let quakeNarrationActive = false;
 let lastDeliveredQuake = '';
 function quakeAudioStatus(text) {
   const el = document.getElementById('qm-audio-status');
@@ -3541,38 +3539,37 @@ function createQuakeSiren() {
 }
 function stopQuakeAudio() {
   quakeAudioRun++;
-  quakeNarrationRequest?.abort(); quakeNarrationRequest=null;
-  [quakeSirenAudio,quakeNarrationAudio].forEach(audio=>{if(audio){audio.onended=null;audio.pause();audio.currentTime=0;}});
-  quakeNarrationAudio=null;
-  if(quakeNarrationUrl){URL.revokeObjectURL(quakeNarrationUrl);quakeNarrationUrl=null;}
-  // Cancel utterances queued by an older version; never speak through the browser engine.
+  if(quakeSirenAudio){quakeSirenAudio.onended=null;quakeSirenAudio.pause();quakeSirenAudio.currentTime=0;}
+  quakeNarrationActive=false;
   window.speechSynthesis?.cancel();
 }
 async function speakQuake(q,run) {
-  const endpoint=String(currentDisplayConfig?.quakeConfig?.narrationEndpoint || '').trim();
-  if(!endpoint) {
-    quakeAudioStatus('Sirene selesai. Narasi non-Google belum dikonfigurasi. TTS bawaan browser dinonaktifkan.');
+  if(!q || run!==quakeAudioRun || activeQuake!==q)return;
+  if(!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance){
+    quakeAudioStatus('Browser TV tidak mendukung TTS. Sirene dan informasi visual tetap tersedia.');
     return;
   }
+  const synth=window.speechSynthesis;
+  if(!synth.getVoices().length) {
+    await new Promise(resolve=>{
+      const done=()=>{clearTimeout(timer);synth.removeEventListener('voiceschanged',done);resolve();};
+      const timer=setTimeout(done,1200);synth.addEventListener('voiceschanged',done);
+    });
+  }
+  if(run!==quakeAudioRun || activeQuake!==q)return;
+  const voices=synth.getVoices().filter(v=>/^id(?:-|_|$)/i.test(v.lang));
+  const voice=voices.find(v=>/natural|neural/i.test(v.name)) || voices.find(v=>/google/i.test(v.name)) || voices[0];
+  const text=`${q.isSimulation?'Simulasi. Ini latihan, bukan kejadian nyata.':'Informasi gempa dari BMKG.'} Gempa bermagnitudo ${String(q.Magnitude||'').replace('.', ' koma ')}. Kedalaman ${String(q.Kedalaman||'belum tersedia').replace(/km/gi,'kilometer')}. ${q.Wilayah||''}. ${q.Dirasakan ? 'Dirasakan: '+q.Dirasakan : 'Intensitas belum dilaporkan.'} ${q.Potensi||'Informasi potensi tsunami belum tersedia.'} Magnitudo bukan ukuran guncangan di lokasi Anda. Jika terasa guncangan, merunduk, berlindung, dan berpegangan. Ikuti arahan petugas.`;
+  const speech=new SpeechSynthesisUtterance(text);
+  speech.lang='id-ID';if(voice)speech.voice=voice;
+  speech.rate=.96;speech.pitch=1;speech.volume=1;
+  speech.onstart=()=>{if(run===quakeAudioRun){quakeNarrationActive=true;quakeAudioStatus('Narasi gempa aktif · '+(voice?.name || 'Suara Indonesia browser'));}};
+  speech.onend=()=>{if(run===quakeAudioRun){quakeNarrationActive=false;quakeAudioStatus('Narasi selesai. Pantau arahan resmi BMKG.');}};
+  speech.onerror=()=>{if(run===quakeAudioRun){quakeNarrationActive=false;quakeAudioStatus('Narasi gagal diputar. Tekan Putar alarm untuk mencoba kembali.');}};
   try {
-    const url=new URL(endpoint,location.href);
-    if(url.protocol!=='https:')throw new Error('Endpoint harus HTTPS');
-    if(/(^|\.)(google\.com|googleapis\.com|gstatic\.com)$/.test(url.hostname))throw new Error('Endpoint Google tidak diizinkan');
-    const text=`${q.isSimulation?'Simulasi. Ini latihan, bukan kejadian nyata.':'Informasi gempa dari BMKG.'} Gempa bermagnitudo ${String(q.Magnitude||'').replace('.', ' koma ')}. Kedalaman ${String(q.Kedalaman||'belum tersedia').replace(/km/gi,'kilometer')}. ${q.Wilayah||''}. ${q.Dirasakan ? 'Guncangan yang dirasakan: '+q.Dirasakan : 'Intensitas belum dilaporkan.'} ${q.Potensi||'Potensi tsunami belum tersedia.'} Magnitudo bukan ukuran guncangan di lokasi Anda. Jika terasa guncangan, merunduk, berlindung, dan berpegangan. Ikuti arahan petugas.`;
-    const controller=new AbortController();quakeNarrationRequest=controller;
-    const timeout=setTimeout(()=>controller.abort(),15000);
-    quakeAudioStatus('Menyiapkan narasi non-Google…');
-    let response;
-    try {response=await fetch(url.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language:'id-ID'}),signal:controller.signal,credentials:'omit'});}finally{clearTimeout(timeout);}
-    if(!response.ok || !response.headers.get('content-type')?.startsWith('audio/'))throw new Error('Respons audio tidak valid');
-    const blob=await response.blob();
-    if(run!==quakeAudioRun || activeQuake!==q)return;
-    if(!blob.size || blob.size>10*1024*1024)throw new Error('Ukuran audio tidak valid');
-    quakeNarrationUrl=URL.createObjectURL(blob);quakeNarrationAudio=new Audio(quakeNarrationUrl);
-    quakeNarrationAudio.onended=()=>{if(run===quakeAudioRun)quakeAudioStatus('Narasi selesai. Pantau arahan resmi BMKG.');};
-    await quakeNarrationAudio.play();
-    if(run===quakeAudioRun)quakeAudioStatus('Narasi layanan non-Google aktif.');
-  }catch(error){if(run===quakeAudioRun)quakeAudioStatus('Narasi non-Google tidak tersedia. Tidak ada pengalihan ke TTS browser.');}
+    synth.cancel();synth.resume();quakeNarrationActive=true;synth.speak(speech);
+    quakeAudioStatus('Menyiapkan narasi bahasa Indonesia…');
+  }catch(error){quakeNarrationActive=false;quakeAudioStatus('Narasi gagal diputar. Sirene tetap tersedia.');}
 }
 
 function calcQuakeDistanceKm(lat1, lon1, lat2, lon2) {
@@ -3673,7 +3670,7 @@ function showQuakeAlertModal(q) {
   quakeCountdownTimer = setInterval(() => {
     rem--;
     setTxt('quake-countdown', String(Math.max(0, rem)));
-    if (rem <= 0) hideQuakeAlertModal();
+    if (rem <= 0 && (!quakeNarrationActive || rem <= -90)) hideQuakeAlertModal();
   }, 1000);
 
   startQuakeSiren();

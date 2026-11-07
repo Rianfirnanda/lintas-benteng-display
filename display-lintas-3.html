@@ -857,15 +857,11 @@
                 </label>
                 <label class="field">Suara Sirine Peringatan Darurat
                     <select id="qk-sound-enable">
-                        <option value="true" selected>Sirene darurat (narasi melalui layanan khusus)</option>
+                        <option value="true" selected>Sirene darurat + TTS bahasa Indonesia</option>
                         <option value="false">Tanpa Suara (Visual Saja)</option>
                     </select>
                 </label>
-                <p class="hint">Sirene mandiri selama 6 detik. Jika diblokir browser, tekan Putar alarm di TV. TTS bawaan browser tidak digunakan. Narasi memerlukan endpoint backend non-Google seperti ElevenLabs atau Azure, tanpa menyimpan kunci API di HTML.</p>
-                <label class="field">Endpoint narasi non-Google (opsional)
-                    <input id="qk-narration-endpoint" type="url" placeholder="https://layanan-anda/quake-tts">
-                    <small class="hint">Backend menerima POST JSON {text, language} dan mengembalikan audio. Kosongkan untuk sirene tanpa narasi. Provider suara diatur pada backend.</small>
-                </label>
+                <p class="hint">Sirene selama 6 detik, dilanjutkan TTS bahasa Indonesia dari browser TV, termasuk Google jika tersedia. Tidak perlu endpoint atau kunci API. Jika audio diblokir, tekan Putar alarm di TV.</p>
                 <label class="field">Durasi Tampil Popup Peringatan (Detik)
                     <input type="number" id="qk-duration-sec" value="45" min="10" max="300">
                 </label>
@@ -2215,15 +2211,11 @@
         syncToDisplay({ quakeAlert: clearPayload }, 'Peringatan gempa di layar display ditutup.', $('qk-feedback'));
     });
 
-    $('qk-narration-endpoint').value = displayConfig.quakeConfig?.narrationEndpoint || '';
     $('btn-save-quake-cfg')?.addEventListener('click', () => {
-        const endpoint = $('qk-narration-endpoint').value.trim();
-        if (endpoint && !/^https:\/\//i.test(endpoint)) { $('qk-feedback').textContent = 'Endpoint narasi harus menggunakan HTTPS.'; return; }
         displayConfig.quakeConfig = {
             autoEnable: $('qk-auto-enable').value === 'true',
             radiusKm: Number($('qk-radius-km').value) || 250,
             soundEnable: $('qk-sound-enable').value === 'true',
-            narrationEndpoint: $('qk-narration-endpoint').value.trim(),
             durationSec: Number($('qk-duration-sec').value) || 45
         };
         syncToDisplay({ displayConfig }, 'Konfigurasi deteksi gempa otomatis BMKG disimpan.', $('qk-feedback'));
