@@ -923,7 +923,7 @@
     feather.replace();
 
     // ---------- clock + sidebar ----------
-    function updateClock() { $('clock').textContent = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+    function updateClock() { $('clock').textContent = new Date().toLocaleTimeString('id-ID', { timeZone:'Asia/Jakarta', hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
     setInterval(updateClock, 1000); updateClock();
     window.toggleSidebar = function () {
         const sb = $('sidebar'), ov = $('overlay');
@@ -1025,7 +1025,7 @@
         setTrend('st-conn-sub', online ? 'display terhubung' : 'display offline / belum dibuka', online ? 'up' : 'down');
 
         const ch = Number.isInteger(status?.channel) ? status.channel : selectedChannel;
-        $('st-channel').textContent = channels[ch] || '-';
+        $('st-channel').textContent = status?.channelName || channels[ch] || '-';
 
         const a = status?.autoOn;
         const autoBtn = $('btn-auto-schedules');
@@ -1033,12 +1033,12 @@
         if (autoBtn) autoBtn.textContent = a === true ? 'Matikan jadwal otomatis' : 'Aktifkan jadwal otomatis';
         if (autoState) autoState.textContent = online ? `Jadwal otomatis: ${a === true ? 'aktif' : a === false ? 'mati' : 'belum dikonfirmasi'}` : 'Status display: offline';
         if (!online) { $('st-auto').textContent = '-'; setTrend('st-auto-sub', 'menunggu display online', 'warn'); }
-        else if (a === true) { $('st-auto').textContent = 'AKTIF'; setTrend('st-auto-sub', 'azan, Indonesia Raya & video SE2026 siap', 'up'); }
+        else if (a === true) { $('st-auto').textContent = 'AKTIF'; setTrend('st-auto-sub', status?.azanActive ? 'jadwal lagu & azan aktif' : 'jadwal lagu aktif; azan menunggu jadwal salat', status?.azanActive ? 'up' : 'warn'); }
         else if (a === false) { $('st-auto').textContent = 'MATI'; setTrend('st-auto-sub', 'diatur dari panel kontrol', 'warn'); }
         else { $('st-auto').textContent = '-'; setTrend('st-auto-sub', 'diaktifkan dari layar display', ''); }
 
         if (!online) { $('st-unlock').textContent = '-'; setTrend('st-unlock-sub', 'menunggu display online', 'warn'); }
-        else if (status.unlocked === false) { $('st-unlock').textContent = 'BELUM'; setTrend('st-unlock-sub', 'klik/sentuh layar display 1×', 'down'); }
+        else if (status.unlocked !== true) { $('st-unlock').textContent = 'BELUM'; setTrend('st-unlock-sub', 'klik/sentuh layar display 1×', 'down'); }
         else { $('st-unlock').textContent = 'OK'; setTrend('st-unlock-sub', 'audio & video boleh diputar', 'up'); }
     }
 
@@ -1068,8 +1068,15 @@
         listenersStarted = true;
         onSnapshot(mainRef, snap => {
             const d = snap.data() || {};
-            if (Number.isInteger(d.channel) && d.channel >= 0 && d.channel < channels.length) selectedChannel = d.channel;
-            renderChannels(); renderStatus();
+            if (d.displayConfig) {
+                displayConfig = { ...defaultDisplayConfig, ...displayConfig, ...d.displayConfig };
+                if (!document.querySelector('.content')?.contains(document.activeElement)) {
+                    populateCustomForms(); renderDndStudio(); renderAudioControlUI(); renderYoutubePlaylist();
+                }
+            }
+            if (Array.isArray(d.customChannels) && d.customChannels.length) fullChannelList = d.customChannels;
+            if (Number.isInteger(d.channel) && d.channel >= 0 && d.channel < fullChannelList.length) selectedChannel = d.channel;
+            renderEnhancedChannels(); renderStatus();
             if (!eoqForm.contains(document.activeElement)) fillEoqForm(d.eoq);
         }, err => { feedback.textContent = 'Gagal membaca: ' + err.code; });
 
@@ -1411,7 +1418,7 @@
         const selectedKey = String(selectedName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
         selectedChannel = Math.max(0, fullChannelList.findIndex(ch => ch.name.toLowerCase().replace(/[^a-z0-9]/g, '') === selectedKey));
         try { localStorage.setItem(LOCAL_CH_KEY, JSON.stringify(fullChannelList)); } catch (e) {}
-        const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const nowStr = new Date().toLocaleTimeString('id-ID', { timeZone:'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
         if (syncLbl) syncLbl.textContent = `Update iptv-org: ${nowStr} WIB (${fullChannelList.length} channel)`;
         if (badge) badge.textContent = `Live · ${fullChannelList.length} Ch`;
         renderEnhancedChannels();
@@ -1564,6 +1571,7 @@
             feedback.textContent = 'Nama channel dan URL wajib diisi.';
             return;
         }
+        try { const parsed=new URL(url); if(!['http:','https:'].includes(parsed.protocol))throw new Error(); } catch { feedback.textContent='URL siaran harus berupa alamat HTTP atau HTTPS yang valid.'; return; }
         if (type === 'iframe' && (url.includes('youtube.com') || url.includes('youtu.be'))) {
             url = extractYoutubeEmbedUrl(url, displayConfig.audioControl.muted) || url;
         }
@@ -1606,6 +1614,8 @@
     function sendAudioUpdate(patch, msg) {
         displayConfig.audioControl = {
             ...displayConfig.audioControl,
+            action: null,
+            triggerMedia: null,
             ...patch,
             ts: Date.now()
         };
@@ -1913,8 +1923,8 @@
         if ($('cfg-ticker-speed')) $('cfg-ticker-speed').value = tk.speedSec || 240;
 
         const sc = displayConfig.schedules || defaultDisplayConfig.schedules;
-        if ($('cfg-sched-sensus')) $('cfg-sched-sensus').value = (sc.sensus || []).join(', ');
-        if ($('cfg-sched-ir')) $('cfg-sched-ir').value = (sc.ir || []).join(', ');
+        if ($('cfg-sched-sensus')) $('cfg-sched-sensus').value = '07:30, 16:00 (Jumat 16:30)';
+        if ($('cfg-sched-ir')) $('cfg-sched-ir').value = '07:30, 16:00 (Jumat 16:30)';
         if ($('cfg-sholat-manual')) $('cfg-sholat-manual').checked = !!sc.manualSholat;
         if (sc.sholatTimes) {
             if ($('cfg-sh-fajr')) $('cfg-sh-fajr').value = sc.sholatTimes.Fajr || '04:40';
@@ -1923,6 +1933,11 @@
             if ($('cfg-sh-maghrib')) $('cfg-sh-maghrib').value = sc.sholatTimes.Maghrib || '18:06';
             if ($('cfg-sh-isha')) $('cfg-sh-isha').value = sc.sholatTimes.Isha || '19:16';
         }
+        const qk = displayConfig.quakeConfig || defaultDisplayConfig.quakeConfig;
+        $('qk-auto-enable').value = String(qk.autoEnable !== false);
+        $('qk-sound-enable').value = String(qk.soundEnable !== false);
+        $('qk-radius-km').value = qk.radiusKm || 250;
+        $('qk-duration-sec').value = qk.durationSec || 45;
         renderDynamicLists();
     }
 
@@ -2088,8 +2103,8 @@
 
     $('btn-save-schedules')?.addEventListener('click', () => {
         displayConfig.schedules = {
-            sensus: $('cfg-sched-sensus').value.split(',').map(s => s.trim()).filter(Boolean),
-            ir: $('cfg-sched-ir').value.split(',').map(s => s.trim()).filter(Boolean),
+            sensus: ['07:30', '16:00'],
+            ir: ['07:30', '16:00'],
             manualSholat: $('cfg-sholat-manual').checked,
             sholatTimes: {
                 Fajr: $('cfg-sh-fajr').value || '04:40',
@@ -2130,6 +2145,7 @@
             if (!autoRes.ok) throw new Error('BMKG HTTP ' + autoRes.status);
             const autoData = await autoRes.json();
             const g = autoData?.Infogempa?.gempa;
+            if (!g || !g.DateTime || !Number.isFinite(Number(g.Magnitude))) throw new Error('Data BMKG tidak valid');
             const feltData = feltRes && feltRes.ok ? await feltRes.json().catch(() => null) : null;
             const list = feltData?.Infogempa?.gempa || (g ? [g] : []);
 
@@ -2167,9 +2183,11 @@
                     });
                 });
             }
+            return true;
         } catch (e) {
             if (headline) headline.textContent = 'Menunggu koneksi ke API BMKG (data.bmkg.go.id)';
-            if (sub) sub.textContent = 'Pastikan koneksi internet aktif untuk mengambil data gempa realtime.';
+            if (sub) sub.textContent = 'Pembaruan gagal. Data sebelumnya di tabel bukan pembaruan terkini.';
+            return false;
         }
     }
 
@@ -2182,16 +2200,17 @@
         syncToDisplay({ quakeAlert: alertPayload }, msg, $('qk-feedback'));
     }
 
-    $('btn-check-bmkg')?.addEventListener('click', () => {
-        fetchBmkgQuakes();
-        $('qk-feedback').textContent = 'Mengambil pembaruan BMKG… Periksa status di atas.';
+    $('btn-check-bmkg')?.addEventListener('click', async () => {
+        $('qk-feedback').textContent = 'Mengambil pembaruan BMKG…';
+        const ok = await fetchBmkgQuakes();
+        $('qk-feedback').textContent = ok ? 'Data BMKG berhasil diperbarui.' : 'Data BMKG gagal diperbarui. Periksa koneksi.';
     });
 
     $('btn-sim-quake')?.addEventListener('click', () => {
         const now = new Date();
         const simQuake = {
-            Tanggal: now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-            Jam: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB',
+            Tanggal: now.toLocaleDateString('id-ID', { timeZone:'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }),
+            Jam: now.toLocaleTimeString('id-ID', { timeZone:'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB',
             DateTime: now.toISOString(),
             Coordinates: '-3.78,102.32',
             Lintang: '3.78 LS',
