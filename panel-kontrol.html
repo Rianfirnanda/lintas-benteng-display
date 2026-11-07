@@ -827,6 +827,78 @@ html[data-theme] .hdr-clock { background:none; -webkit-text-fill-color:var(--tex
 @media(max-width:720px) { .quake-modal-body { grid-template-columns:1fr; } .quake-metrics { grid-template-columns:1fr 1fr; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }
 </style>
+<style>
+/* Shared palette for the display and its control panel. */
+:root,html[data-theme="dark"] {
+ --lb-bg:#101c28; --lb-text:#edf3f8; --lb-muted:#aebdcb; --lb-accent:#83b4d5;
+ --lb-surface:rgba(28,43,58,.78); --lb-fill:rgba(255,255,255,.05); --lb-border:rgba(200,221,237,.16);
+ --text:var(--lb-text); --text-dim:var(--lb-muted); --muted:var(--lb-muted);
+ --bg:var(--lb-bg); --surface:var(--lb-surface); --card:var(--lb-surface); --border:var(--lb-border);
+ --glass-bg:var(--lb-surface); --glass-bg-hero:var(--lb-surface); --fill:var(--lb-fill);
+ --gold-300:var(--lb-accent); --gold-400:var(--lb-accent); --gold-500:#588baa;
+ --blue:var(--lb-accent); --purple:var(--lb-accent); --steel-300:var(--lb-muted); --panel-border:var(--lb-border);
+ --panel-border-soft:var(--lb-border); --lb-action:#326e97;
+}
+html[data-theme="light"] {
+ --lb-bg:#edf2f5; --lb-text:#203346; --lb-muted:#506578; --lb-accent:#315f80;
+ --lb-surface:rgba(255,255,255,.78); --lb-fill:rgba(255,255,255,.5); --lb-border:rgba(57,87,108,.16);
+ --gold-500:#477a99;
+}
+html[data-theme] body { background:radial-gradient(ellipse at 80% 0%,rgba(101,151,177,.12),transparent 55%),var(--lb-bg) !important; color:var(--lb-text); }
+button,input,select,textarea { font:inherit; }
+:where(button,input,select,textarea):focus-visible { outline:2px solid var(--lb-accent); outline-offset:3px; }
+
+#app-root, #main-grid, #main-grid > *, #app-header > * { min-width:0; box-sizing:border-box; }
+#main-grid > * { min-height:0; }
+@media(min-width:1024px) and (min-height:600px) {
+ html,body { height:100% !important; overflow:hidden !important; }
+ #app-root { height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
+ #main-grid { min-height:0 !important; }
+ #tv-frame-container,#tv-stage { min-height:0; }
+}
+@media(min-width:1024px) and (max-height:800px) {
+ #app-header { padding:6px 14px; gap:8px; }
+ .hdr-clock { font-size:30px; }
+ .hdr-clockbox { gap:8px; }
+ #sholat-panel { padding:8px 12px; }
+ .sh-cell { padding:6px; }
+ #panel-tv { padding:8px; }
+}
+@media(max-width:1023px) and (min-width:640px) {
+ #main-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ #main-grid > :nth-child(1) { grid-column:1 / -1 !important; grid-row:auto !important; }
+ #main-grid > :nth-child(2) { grid-column:1 !important; grid-row:auto !important; }
+ #main-grid > :nth-child(3) { grid-column:2 !important; grid-row:auto !important; }
+}
+@media(max-width:639px) {
+ #app-header { grid-template-columns:minmax(0,1fr); }
+ .hdr-clockbox { justify-content:space-between; flex-wrap:wrap; gap:6px; }
+ .hdr-brand { min-width:0; }
+ #main-grid > * { min-width:0; flex-basis:100%; }
+ #sholat-panel { flex-wrap:wrap; }
+ .sh-cells { min-width:0; width:100%; }
+ .hdr-quake-pill { max-width:100%; white-space:normal; }
+}
+</style>
+<script>
+(() => {
+ const key = 'lintasbenteng-display-config';
+ window.applyDisplayTheme = theme => {
+   if (!['light','dark'].includes(theme)) return;
+   document.documentElement.dataset.theme = theme;
+   try { localStorage.setItem('theme',theme); } catch {}
+ };
+ try {
+   const cfg = JSON.parse(localStorage.getItem(key) || 'null');
+   applyDisplayTheme(cfg?.theme || localStorage.getItem('theme') || 'dark');
+ } catch { applyDisplayTheme('dark'); }
+ window.addEventListener('storage', e => {
+   if (e.key === key) { try { applyDisplayTheme(JSON.parse(e.newValue)?.theme); } catch {} }
+   if (e.key === 'theme') applyDisplayTheme(e.newValue);
+ });
+})();
+</script>
+
 </head>
 <body class="text-white h-screen w-screen overflow-hidden flex flex-col">
 
@@ -3144,7 +3216,7 @@ function applyFullDisplayConfig(cfg) {
 
   // 1. Tema
   if (cfg.theme === 'light' || cfg.theme === 'dark') {
-    document.documentElement.dataset.theme = cfg.theme;
+    window.applyDisplayTheme(cfg.theme);
     try { localStorage.setItem('theme', cfg.theme); } catch {}
   }
 

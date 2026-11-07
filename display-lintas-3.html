@@ -327,6 +327,67 @@ input:focus,select:focus,textarea:focus { outline:2px solid #326e9740; outline-o
 .btn.success { color:#26715b; border-color:#9fc7b9; }
 .field select option,.pk-select option { background:white; color:var(--text); }
 </style>
+<style>
+/* Shared palette for the display and its control panel. */
+:root,html[data-theme="dark"] {
+ --lb-bg:#101c28; --lb-text:#edf3f8; --lb-muted:#aebdcb; --lb-accent:#83b4d5;
+ --lb-surface:rgba(28,43,58,.78); --lb-fill:rgba(255,255,255,.05); --lb-border:rgba(200,221,237,.16);
+ --text:var(--lb-text); --text-dim:var(--lb-muted); --muted:var(--lb-muted);
+ --bg:var(--lb-bg); --surface:var(--lb-surface); --card:var(--lb-surface); --border:var(--lb-border);
+ --glass-bg:var(--lb-surface); --glass-bg-hero:var(--lb-surface); --fill:var(--lb-fill);
+ --gold-300:var(--lb-accent); --gold-400:var(--lb-accent); --gold-500:#588baa;
+ --blue:var(--lb-accent); --purple:var(--lb-accent); --steel-300:var(--lb-muted); --panel-border:var(--lb-border);
+ --panel-border-soft:var(--lb-border); --lb-action:#326e97;
+}
+html[data-theme="light"] {
+ --lb-bg:#edf2f5; --lb-text:#203346; --lb-muted:#506578; --lb-accent:#315f80;
+ --lb-surface:rgba(255,255,255,.78); --lb-fill:rgba(255,255,255,.5); --lb-border:rgba(57,87,108,.16);
+ --gold-500:#477a99;
+}
+html[data-theme] body { background:radial-gradient(ellipse at 80% 0%,rgba(101,151,177,.12),transparent 55%),var(--lb-bg) !important; color:var(--lb-text); }
+button,input,select,textarea { font:inherit; }
+:where(button,input,select,textarea):focus-visible { outline:2px solid var(--lb-accent); outline-offset:3px; }
+
+html[data-theme] .sidebar,html[data-theme] .topbar { background:var(--lb-surface); border-color:var(--lb-border); }
+html[data-theme] .stat-card,html[data-theme] .chart-card,html[data-theme] .quick-controls { background:var(--lb-surface) !important; }
+html[data-theme] :is(.btn,.pk-tab,.ch-cat-btn,.channel,.current,.toolbar-row,.vol-box,.yt-item,.dyn-item,.dnd-card,.dnd-row-item,.pk-input,.pk-select,.pk-textarea,.field input,.field select,.field textarea,select option) { background:var(--lb-fill) !important; color:var(--lb-text) !important; border-color:var(--lb-border) !important; }
+html[data-theme] select option { background:var(--lb-bg) !important; }
+html[data-theme] .btn.primary { background:var(--lb-action) !important; color:#fff !important; }
+html[data-theme] :is(.pk-tab,.ch-cat-btn,.channel,.nav-item).active { color:var(--lb-accent) !important; background:var(--lb-fill) !important; border-color:var(--lb-accent) !important; }
+html[data-theme] .logo-text,html[data-theme] .page-header h1,html[data-theme] .section-title,html[data-theme] .chart-header h3 { color:var(--lb-text) !important; -webkit-text-fill-color:var(--lb-text); }
+html[data-theme] .hint,html[data-theme] .field { color:var(--lb-muted); }
+html[data-theme] .section-title::after { background:var(--lb-border); }
+html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--lb-accent); }
+.eoq-form > *, .toolbar-group, .chart-header > *, .page-header > * { min-width:0; }
+@media(max-width:768px) {
+ .content { max-width:100%; }
+ .page-header,.chart-header { flex-wrap:wrap; gap:12px; }
+ .eoq-form { grid-template-columns:minmax(0,1fr); }
+ .field.full { grid-column:1 / -1; }
+ .pk-tabs { flex-wrap:wrap; }
+ .btn { white-space:normal; height:auto; min-height:38px; }
+ .quake-table-wrap { max-width:100%; overflow:auto; }
+}
+</style>
+<script>
+(() => {
+ const key = 'lintasbenteng-display-config';
+ window.applyDisplayTheme = theme => {
+   if (!['light','dark'].includes(theme)) return;
+   document.documentElement.dataset.theme = theme;
+   try { localStorage.setItem('theme',theme); } catch {}
+ };
+ try {
+   const cfg = JSON.parse(localStorage.getItem(key) || 'null');
+   applyDisplayTheme(cfg?.theme || localStorage.getItem('theme') || 'dark');
+ } catch { applyDisplayTheme('dark'); }
+ window.addEventListener('storage', e => {
+   if (e.key === key) { try { applyDisplayTheme(JSON.parse(e.newValue)?.theme); } catch {} }
+   if (e.key === 'theme') applyDisplayTheme(e.newValue);
+ });
+})();
+</script>
+
 </head>
 <body>
 
@@ -1269,6 +1330,12 @@ input:focus,select:focus,textarea:focus { outline:2px solid #326e9740; outline-o
     } catch (e) {}
 
     // Fungsi kirim ke Display (Firestore + BroadcastChannel + localStorage)
+    $('cfg-theme')?.addEventListener('change', () => {
+        displayConfig.theme = $('cfg-theme').value;
+        window.applyDisplayTheme(displayConfig.theme);
+        syncToDisplay({ displayConfig }, 'Tema panel kontrol dan display diperbarui.', $('cust-feedback'));
+    });
+    window.applyDisplayTheme(displayConfig.theme);
     async function syncToDisplay(patch, msg = 'Perubahan dikirim ke display.', feedbackEl = feedback, silent = false) {
         try {
             localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify(displayConfig));
