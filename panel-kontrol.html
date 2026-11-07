@@ -799,6 +799,34 @@ window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABB
 
   </style>
 
+<style>
+/* Quiet glass surfaces; preserve the existing display grid. */
+:root { --gold-300:#bad6ec; --gold-400:#83b4d5; --gold-500:#588baa; --text:#edf3f8; --text-dim:#aebdcb; --glass-bg:rgba(28,43,58,.68); --glass-bg-hero:rgba(32,48,63,.74); --glass-shadow:0 8px 24px rgba(0,0,0,.14); --panel-border:rgba(200,221,237,.16); }
+html[data-theme="light"] { --text:#203346; --text-dim:#506578; --gold-300:#315f80; --gold-400:#386e91; --gold-500:#477a99; --glass-bg:rgba(255,255,255,.72); --glass-bg-hero:rgba(255,255,255,.8); --fill:rgba(255,255,255,.5); --glass-shadow:0 8px 24px rgba(38,65,88,.08); --panel-border:rgba(57,87,108,.16); }
+html[data-theme] body { background:radial-gradient(ellipse at 80% 0%,rgba(101,151,177,.12),transparent 55%),#101c28 !important; }
+html[data-theme="light"] body { background:radial-gradient(ellipse at 80% 0%,#dae8f0,transparent 65%),#edf2f5 !important; }
+body::before,.sunburst-rays,.eoq-glow { display:none !important; }
+html[data-theme] .panel,html[data-theme] .panel-featured,html[data-theme] .glass-bar,html[data-theme] .tv-ticker-wrapper { border-radius:16px; border-color:var(--panel-border) !important; box-shadow:var(--glass-shadow) !important; backdrop-filter:blur(22px); }
+html[data-theme] #main-grid > *:hover { transform:none !important; }
+html[data-theme] .hdr-clock { background:none; -webkit-text-fill-color:var(--text); color:var(--text); font-variant-numeric:tabular-nums; }
+.ph-title { letter-spacing:.025em !important; }
+#quake-alert-overlay { background:rgba(5,12,20,.82); backdrop-filter:blur(16px); padding:24px; }
+.quake-modal { width:min(1100px,96vw); max-height:94vh; overflow:auto; border:1px solid #99534e; border-radius:20px; background:#152230; box-shadow:0 24px 100px #0008; color:#f3f6f9; }
+.quake-modal-head { background:#652e2c; padding:20px 26px; display:flex; justify-content:space-between; gap:20px; align-items:center; }
+.quake-modal-head h2 { font-size:18px; letter-spacing:.04em; }
+#qm-close { border:1px solid #ffffff50; border-radius:8px; padding:8px 14px; color:white; background:#ffffff12; cursor:pointer; }
+.quake-modal-body { grid-template-columns:minmax(0,1fr) minmax(240px,34%); padding:26px; gap:24px; }
+.quake-shakemap { width:100%; height:auto; aspect-ratio:1; background:#e9eef2; }
+.quake-shakemap img { object-fit:contain; }
+.quake-metric { border-radius:10px; background:#ffffff08; }
+.quake-metric b { font-size:clamp(18px,2.2vw,32px); font-variant-numeric:tabular-nums; }
+#qm-dist { font-size:18px; }
+#qm-wilayah { font-size:22px; line-height:1.4; color:#fff; }
+.quake-guidance { padding:14px 0; margin-top:12px; border-top:1px solid #ffffff20; font-size:15px; line-height:1.65; }
+#qm-source { font-size:12px; line-height:1.6; color:#b0c1d0; }
+@media(max-width:720px) { .quake-modal-body { grid-template-columns:1fr; } .quake-metrics { grid-template-columns:1fr 1fr; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }
+</style>
 </head>
 <body class="text-white h-screen w-screen overflow-hidden flex flex-col">
 
@@ -816,7 +844,7 @@ window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABB
       </div>
 
       <div class="hdr-clockbox">
-        <div id="bmkg-hdr-pill" class="hdr-quake-pill" title="Status Gempa Terkini BMKG (Kota Bengkulu &amp; Bengkulu Tengah)"><span>BMKG:</span><b id="bmkg-hdr-txt">Aman</b></div>
+        <div id="bmkg-hdr-pill" class="hdr-quake-pill" title="Status Gempa Terkini BMKG (Kota Bengkulu &amp; Bengkulu Tengah)"><span>BMKG:</span><b id="bmkg-hdr-txt">Menghubungkan…</b></div>
         <div id="net" class="hdr-net" data-state="ok" title="Memeriksa jaringan...">
           <div class="net-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
           <div class="net-text"><b id="net-state">CEK</b><span id="net-ping">-- ms</span></div>
@@ -1594,8 +1622,8 @@ const videoIndonesiaRaya = document.getElementById("videoIndonesiaRaya");
 const videoIR = document.getElementById("videoIndonesiaRayaPlayer");
 const loadingOverlayIR = document.getElementById("loadingOverlayIR");
 
-const jadwalSensus        = ["07:25", "15:55"];
-const jadwalIndonesiaRaya = ["10:00"];
+const jadwalSensus        = ["07:30", "16:00"];
+const jadwalIndonesiaRaya = ["07:30", "16:00"];
 
 let sudahPopupHariIni = {};
 
@@ -1673,7 +1701,7 @@ async function fetchWithTimeout(url, ms = 6000) {
 async function fetchJadwalMyQuran() {
   if (!_mqKotaId) {
     const cari = await fetchWithTimeout('https://api.myquran.com/v2/sholat/kota/cari/bengkulu%20tengah');
-    const kota = (cari.data || []).find(k => /bengkulu\s*tengah/i.test(k.lokasi)) || (cari.data || [])[0];
+    const kota = (cari.data || []).find(k => /bengkulu\s*tengah/i.test(k.lokasi));
     if (!kota) throw new Error('Kota tidak ditemukan');
     _mqKotaId = kota.id;
     console.log('📍 myquran kota:', kota.lokasi, kota.id);
@@ -1681,7 +1709,7 @@ async function fetchJadwalMyQuran() {
   const tgl = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }).replace(/-/g, '/');
   const res = await fetchWithTimeout(`https://api.myquran.com/v2/sholat/jadwal/${_mqKotaId}/${tgl}`);
   const j = res && res.data && res.data.jadwal;
-  if (!j || !j.subuh) throw new Error('Data myquran tidak valid');
+  if (!j || !['subuh','dzuhur','ashar','maghrib','isya'].every(k=>/^([01]\d|2[0-3]):[0-5]\d$/.test(j[k]))) throw new Error('Data myquran tidak valid');
   return { Fajr: j.subuh, Dhuhr: j.dzuhur, Asr: j.ashar, Maghrib: j.maghrib, Isha: j.isya };
 }
 
@@ -1691,19 +1719,10 @@ async function fetchJadwalSholat(lat, lon) {
     console.log('✅ Jadwal sholat dari Kemenag (myquran), Kab. Bengkulu Tengah:', t);
     return t;
   } catch (err) {
-    console.warn('⚠️ myquran gagal, coba Aladhan:', err.message);
+    console.warn('Jadwal Bengkulu Tengah gagal dimuat:', err.message);
   }
-  try {
-    const data = await fetchWithTimeout(
-      `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=20&timezonestring=Asia/Jakarta`
-    );
-    if (!data || !data.data || !data.data.timings) throw new Error('Data tidak valid');
-    console.log('✅ Jadwal sholat dari Aladhan (cadangan).');
-    return data.data.timings;
-  } catch (err) {
-    console.warn('⚠️ Aladhan juga gagal, pakai jadwal hardcode:', err.message);
-    return JADWAL_DEFAULT;
-  }
+  document.getElementById('sh-next-name').textContent = 'Jadwal Bengkulu Tengah belum tersedia';
+  return null;
 }
 
 const SH_ORDER = [['Fajr', 'Subuh'], ['Dhuhr', 'Dzuhur'], ['Asr', 'Ashar'], ['Maghrib', 'Maghrib'], ['Isha', 'Isya']];
@@ -1711,6 +1730,7 @@ let shTimings = null;
 const shClean = v => String(v || '').slice(0, 5);
 
 function tampilkanJadwal(timings) {
+  if (!timings) { shTimings = null; return; }
   shTimings = timings;
   const box = document.getElementById('sh-cells');
   if (!box) return;
@@ -1720,7 +1740,7 @@ function tampilkanJadwal(timings) {
 
 function updateSholatNext() {
   if (!shTimings) return;
-  const now = new Date();
+  const now = new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Jakarta'}));
   const toDate = (hhmm, addDay) => { const [h, m] = hhmm.split(':').map(Number); const d = new Date(now); d.setHours(h, m, 0, 0); if (addDay) d.setDate(d.getDate() + 1); return d; };
   let next = null;
   for (const [k, label] of SH_ORDER) { const d = toDate(shClean(shTimings[k]), false); if (d > now) { next = { k, label, d }; break; } }
@@ -1740,13 +1760,14 @@ setInterval(updateSholatNext, 1000);
 // Tampilkan jadwal otomatis saat halaman dibuka (audio azan tetap butuh klik "Aktifkan Azan")
 fetchJadwalSholat(-3.763, 102.400).then(tampilkanJadwal);
 // ganti hari -> ambil jadwal sholat baru otomatis
-let shDay = new Date().toDateString();
+let shDay = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Jakarta'}).format(new Date());
 setInterval(async () => {
-  if (new Date().toDateString() === shDay) return;
-  shDay = new Date().toDateString();
+  const day = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Jakarta'}).format(new Date());
+  if (day === shDay && shTimings) return;
+  shDay = day;
   const t = await fetchJadwalSholat(-3.763, 102.400);
   tampilkanJadwal(t);
-  if (window._jadwalAzan) { setTimingsAzan(t); window._jadwalAzan = t; }
+  if (azanCheckTimer) { setTimingsAzan(t); window._jadwalAzan = t; }
 }, 60 * 1000);
 
 let jadwalAzanState = {};
@@ -1755,6 +1776,7 @@ let popupAzanActive = false;
 let azanCheckTimer = null;
 
 function setTimingsAzan(timings) {
+  if (!timings) { jadwalAzanState = {}; return; }
   jadwalAzanState = {
     subuh: timings.Fajr,
     dzuhur: timings.Dhuhr,
@@ -1829,7 +1851,8 @@ window.disableAzan = function () {
 
 function checkAzanTime() {
   const now = new Date();
-  const jamSekarang = now.toTimeString().slice(0, 5);
+  const jamSekarang = new Intl.DateTimeFormat('en-GB', {timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+  if (shDay !== new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Jakarta'}).format(now)) return;
 
   for (const [sholat, waktu] of Object.entries(jadwalAzanState)) {
     if (!waktu) continue;
@@ -1854,6 +1877,7 @@ window.startApp = async function () {
     if (btn) { btn.textContent = "Azan aktif"; btn.disabled = true; btn.classList.add("on"); }
 
     const timings = await fetchJadwalSholat(latitude, longitude);
+    if (!timings) throw new Error('Jadwal Bengkulu Tengah belum terverifikasi');
     tampilkanJadwal(timings);
     setTimingsAzan(timings);
     window._jadwalAzan = timings;
@@ -1943,25 +1967,31 @@ video.addEventListener('playing', () => loadingOverlay.classList.add("hidden"));
 videoIR.addEventListener('waiting', () => loadingOverlayIR.classList.remove("hidden"));
 videoIR.addEventListener('playing', () => loadingOverlayIR.classList.add("hidden"));
 
+// Workday boundaries are always evaluated in WIB, independent of the TV timezone.
+function workSlot(date = new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));
+  const time = `${parts.hour}:${parts.minute}`;
+  return {day:`${parts.year}-${parts.month}-${parts.day}`, time, due: !['Sat','Sun'].includes(parts.weekday) && (time === '07:30' || time === (parts.weekday === 'Fri' ? '16:30' : '16:00'))};
+}
+let workQueue = [];
+function nextWorkSong() {
+  const next = workQueue.shift();
+  if (next) next();
+}
+[video, videoIR].forEach(el => {
+  el.addEventListener('ended', nextWorkSong);
+  el.addEventListener('error', nextWorkSong);
+});
 function checkJadwal() {
-  const now = new Date();
-  const waktuSekarang = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-
-  jadwalSensus.forEach(j => {
-    if (window._autoOn?.sensus && waktuSekarang === j && !sudahPopupHariIni['sensus_'+j]) {
-      showVideoPopup();
-      sudahPopupHariIni['sensus_'+j] = true;
-      setTimeout(() => { sudahPopupHariIni['sensus_'+j] = false; }, 2*60*1000);
-    }
-  });
-
-  jadwalIndonesiaRaya.forEach(j => {
-    if (window._autoOn?.ir && waktuSekarang === j && !sudahPopupHariIni['ir_'+j]) {
-      showIndonesiaRayaPopup();
-      sudahPopupHariIni['ir_'+j] = true;
-      setTimeout(() => { sudahPopupHariIni['ir_'+j] = false; }, 2*60*1000);
-    }
-  });
+  const slot = workSlot();
+  if (!slot.due || !(window._autoOn?.ir || window._autoOn?.sensus)) return;
+  const key = 'lb-work-' + slot.day + '-' + slot.time;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, 'played');
+  workQueue = [];
+  if (window._autoOn.ir) workQueue.push(showIndonesiaRayaPopup);
+  if (window._autoOn.sensus) workQueue.push(showVideoPopup);
+  nextWorkSong();
 }
 
 setInterval(checkJadwal, 30000);
@@ -2914,9 +2944,15 @@ function applyAudioControlState(ac) {
 }
 
 // Upgrade renderTvFrameHTML dengan auto-fallback backup URL & presisi rasio
+let tvIframeCleanup = () => {};
+let tvWatchdog = null;
+let tvGeneration = 0;
 const _origRenderTvFrameHTML = renderTvFrameHTML;
 renderTvFrameHTML = function (ch) {
   if (!ch) return;
+  clearInterval(tvWatchdog);
+  tvIframeCleanup();
+  const generation = ++tvGeneration;
   const container = document.getElementById('tv-frame-container');
   if (!container) return;
   if (tvHls) { tvHls.destroy(); tvHls = null; }
@@ -2929,6 +2965,8 @@ renderTvFrameHTML = function (ch) {
     const isIframe = ch.type === 'iframe' || targetUrl.includes('youtube.com/embed') || targetUrl.includes('detik.com') || targetUrl.includes('dailymotion.com') || targetUrl.includes('inews.id');
     container.innerHTML = `<div id="tv-stage" data-fit="${currentFitMode}" class="relative w-full h-full bg-black"><div id="tv-toast"></div></div>`;
     const stage = document.getElementById('tv-stage');
+    clearInterval(tvWatchdog);
+    tvIframeCleanup();
 
     if (isIframe) {
       let finalUrl = targetUrl;
@@ -2938,7 +2976,29 @@ renderTvFrameHTML = function (ch) {
       stage.insertAdjacentHTML('beforeend', `<iframe id="tv-iframe" class="absolute inset-0 w-full h-full border-0" src="${finalUrl}" allowfullscreen allow="autoplay; encrypted-media" scrolling="no"></iframe>`);
       const ifr = document.getElementById('tv-iframe');
       if (ifr) {
+        let handled = false;
+        const failIframe = () => {
+          if (handled || generation !== tvGeneration || !ifr.isConnected) return;
+          handled = true;
+          if (++urlIdx < streamUrls.length) mountUrl(streamUrls[urlIdx]);
+          else if (autoSkipDeadStream && TV_CHANNELS.length > 1) setTvChannel((tvIndex + 1) % TV_CHANNELS.length);
+        };
+        let loadTimer = setTimeout(failIframe, 20000);
+        ifr.addEventListener('error', failIframe);
+        const onMessage = event => {
+          if (event.source !== ifr.contentWindow || !/^https:\/\/(www\.)?youtube\.com$/.test(event.origin)) return;
+          let data; try { data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch { return; }
+          if (data?.event === 'onError' || data?.event === 'onStateChange' && data.info === 0) failIframe();
+        };
+        window.addEventListener('message', onMessage);
+        tvIframeCleanup = () => { clearTimeout(loadTimer); window.removeEventListener('message', onMessage); };
         ifr.addEventListener('load', () => {
+          clearTimeout(loadTimer);
+          if (finalUrl.includes('youtube.com/embed')) {
+            ifr.contentWindow.postMessage(JSON.stringify({event:'listening',id:'tv-iframe'}),'https://www.youtube.com');
+            ['onError','onStateChange'].forEach(name=>ifr.contentWindow.postMessage(JSON.stringify({event:'command',func:'addEventListener',args:[name]}),'https://www.youtube.com'));
+          }
+
           applyYoutubeIframeAudio(ifr, !tvSound, currentVolume);
           setTimeout(() => applyYoutubeIframeAudio(ifr, !tvSound, currentVolume), 1000);
         });
@@ -2949,7 +3009,10 @@ renderTvFrameHTML = function (ch) {
       v.muted = !tvSound;
       v.volume = (currentVolume || 50) / 100;
 
+      let failed = false;
       const tryNextOrFallback = () => {
+        if (failed || generation !== tvGeneration || !v.isConnected) return;
+        failed = true; clearInterval(tvWatchdog);
         urlIdx++;
         if (urlIdx < streamUrls.length) {
           console.log(`🔄 Beralih ke stream cadangan #${urlIdx + 1} untuk ${ch.name}`);
@@ -2960,7 +3023,7 @@ renderTvFrameHTML = function (ch) {
             msgEl.textContent = `Siaran ${ch.name} sedang offline, mengalihkan otomatis...`;
             msgEl.classList.remove('hidden');
           }
-          setTimeout(() => setTvChannel((tvIndex + 1) % TV_CHANNELS.length), 2500);
+          setTimeout(() => { if (generation === tvGeneration) setTvChannel((tvIndex + 1) % TV_CHANNELS.length); }, 2500);
         } else {
           const msgEl = document.getElementById('tv-msg');
           if (msgEl) {
@@ -2970,14 +3033,21 @@ renderTvFrameHTML = function (ch) {
         }
       };
 
+      let lastTime = -1, lastProgress = Date.now();
+      tvWatchdog = setInterval(() => {
+        if (generation !== tvGeneration || !v.isConnected) return clearInterval(tvWatchdog);
+        if (v.currentTime !== lastTime) { lastTime = v.currentTime; lastProgress = Date.now(); }
+        if (!document.hidden && Date.now() - lastProgress > 20000) tryNextOrFallback();
+      }, 2000);
+      v.addEventListener('ended', tryNextOrFallback);
+      v.addEventListener('error', tryNextOrFallback);
       if (window.Hls && Hls.isSupported()) {
         tvHls = new Hls({ enableWorker: true, manifestLoadingTimeOut: 8000, levelLoadingTimeOut: 8000 });
         tvHls.loadSource(targetUrl);
         tvHls.attachMedia(v);
         tvHls.on(Hls.Events.ERROR, (_, d) => {
           if (d.fatal) {
-            if (d.type === Hls.ErrorTypes.MEDIA_ERROR) tvHls.recoverMediaError();
-            else tryNextOrFallback();
+            tryNextOrFallback();
           }
         });
       } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
@@ -3012,7 +3082,29 @@ function applyYoutubeEmbedConfig(ytCfg) {
       stage.innerHTML = `<iframe id="yt-bgm-iframe" class="w-full h-full border-0" src="${ytCfg.url}" allow="autoplay; encrypted-media"></iframe>`;
       const ifr = document.getElementById('yt-bgm-iframe');
       if (ifr) {
+        let handled = false;
+        const failIframe = () => {
+          if (handled || generation !== tvGeneration || !ifr.isConnected) return;
+          handled = true;
+          if (++urlIdx < streamUrls.length) mountUrl(streamUrls[urlIdx]);
+          else if (autoSkipDeadStream && TV_CHANNELS.length > 1) setTvChannel((tvIndex + 1) % TV_CHANNELS.length);
+        };
+        let loadTimer = setTimeout(failIframe, 20000);
+        ifr.addEventListener('error', failIframe);
+        const onMessage = event => {
+          if (event.source !== ifr.contentWindow || !/^https:\/\/(www\.)?youtube\.com$/.test(event.origin)) return;
+          let data; try { data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch { return; }
+          if (data?.event === 'onError' || data?.event === 'onStateChange' && data.info === 0) failIframe();
+        };
+        window.addEventListener('message', onMessage);
+        tvIframeCleanup = () => { clearTimeout(loadTimer); window.removeEventListener('message', onMessage); };
         ifr.addEventListener('load', () => {
+          clearTimeout(loadTimer);
+          if (finalUrl.includes('youtube.com/embed')) {
+            ifr.contentWindow.postMessage(JSON.stringify({event:'listening',id:'tv-iframe'}),'https://www.youtube.com');
+            ['onError','onStateChange'].forEach(name=>ifr.contentWindow.postMessage(JSON.stringify({event:'command',func:'addEventListener',args:[name]}),'https://www.youtube.com'));
+          }
+
           applyYoutubeIframeAudio(ifr, !tvSound, currentVolume);
           setTimeout(() => applyYoutubeIframeAudio(ifr, !tvSound, currentVolume), 1000);
         });
@@ -3053,6 +3145,7 @@ function applyFullDisplayConfig(cfg) {
   // 1. Tema
   if (cfg.theme === 'light' || cfg.theme === 'dark') {
     document.documentElement.dataset.theme = cfg.theme;
+    try { localStorage.setItem('theme', cfg.theme); } catch {}
   }
 
   // 2. Identitas Header & Footer
@@ -3302,7 +3395,7 @@ async function syncDisplayIptvChannels() {
   } catch (e) {}
   try {
     const res = await fetch('https://iptv-org.github.io/iptv/countries/id.m3u');
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('BMKG HTTP ' + res.status);
     const text = await res.text();
     const lines = text.split(/\r?\n/);
     let metaName = '';
@@ -3340,6 +3433,16 @@ let quakeCountdownTimer = null;
 let quakeSirenTimer = null;
 let quakeAudioContext = null;
 let quakeSoundPending = false;
+let quakeSpeechTimer = null;
+let activeQuake = null;
+function speakQuake(q) {
+  if (!q || !('speechSynthesis' in window)) return;
+  const speech = new SpeechSynthesisUtterance(`${q.isSimulation ? 'Simulasi. Ini latihan, bukan kejadian nyata.' : 'Informasi gempa dari BMKG.'} Gempa bermagnitudo ${String(q.Magnitude || '').replace('.', ' koma ')}. Kedalaman ${q.Kedalaman || 'belum tersedia'}. ${q.Wilayah || ''}. Intensitas yang dirasakan: ${q.Dirasakan || 'belum dilaporkan BMKG'}. Magnitudo mengukur kekuatan gempa, bukan tingkat guncangan di lokasi Anda. ${q.Potensi || 'Informasi potensi tsunami belum tersedia.'} Jika merasakan guncangan, merunduk, berlindung, dan berpegangan. Ikuti arahan resmi BMKG dan petugas.`);
+  speech.lang = 'id-ID'; speech.rate = .9;
+  const voice = speechSynthesis.getVoices().find(v=>v.lang.startsWith('id'));
+  if (voice) speech.voice = voice;
+  speechSynthesis.cancel(); speechSynthesis.speak(speech);
+}
 
 function calcQuakeDistanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -3357,10 +3460,10 @@ function playEmergencySirenBeep() {
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(700, now);
-    osc.frequency.linearRampToValueAtTime(1000, now + 0.42);
-    osc.frequency.linearRampToValueAtTime(700, now + 0.95);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(540, now);
+    osc.frequency.linearRampToValueAtTime(1250, now + 0.42);
+    osc.frequency.linearRampToValueAtTime(540, now + 0.95);
     gain.gain.setValueAtTime(0.001, now);
     gain.gain.linearRampToValueAtTime(0.12, now + 0.08);
     gain.gain.setValueAtTime(0.12, now + 0.78);
@@ -3379,10 +3482,12 @@ function startQuakeSiren() {
   if (!ov?.classList.contains('active') || qkCfg.soundEnable === false) return;
   if (quakeSirenTimer) clearInterval(quakeSirenTimer);
   playEmergencySirenBeep();
+  clearTimeout(quakeSpeechTimer);
+  quakeSpeechTimer = setTimeout(() => { if (ov.classList.contains('active')) speakQuake(activeQuake); }, 4600);
   let sirenCount = 0;
   quakeSirenTimer = setInterval(() => {
     sirenCount++;
-    if (sirenCount > 6 || !ov.classList.contains('active')) {
+    if (sirenCount > 2 || !ov.classList.contains('active')) {
       clearInterval(quakeSirenTimer);
       quakeSirenTimer = null;
       return;
@@ -3409,6 +3514,7 @@ function unlockQuakeAudio() {
   document.addEventListener(eventName, unlockQuakeAudio, { capture: true, passive: true })
 );
 
+window.addEventListener('close-quake', hideQuakeAlertModal);
 function hideQuakeAlertModal() {
   const ov = document.getElementById('quake-alert-overlay');
   if (ov) ov.classList.remove('active');
@@ -3416,6 +3522,9 @@ function hideQuakeAlertModal() {
   if (quakeSirenTimer) clearInterval(quakeSirenTimer);
   quakeSirenTimer = null;
   quakeSoundPending = false;
+  clearTimeout(quakeSpeechTimer);
+  window.speechSynthesis?.cancel();
+  activeQuake = null;
 }
 
 function showQuakeAlertModal(q) {
@@ -3441,8 +3550,8 @@ function showQuakeAlertModal(q) {
   setTxt('qm-dist', `${distBenteng} km (Kota: ${distKota} km)`);
   setTxt('qm-wilayah', q.Wilayah || 'Wilayah Bengkulu & Sekitarnya');
   setTxt('qm-waktu', `Waktu Gempa: ${q.Tanggal || ''} · ${q.Jam || ''} (${q.Lintang || ''} ${q.Bujur || ''})`);
-  setTxt('qm-dirasakan', `Wilayah Dirasakan: ${q.Dirasakan || 'Kota Bengkulu & Kab. Bengkulu Tengah'}`);
-  setTxt('qm-potensi', `Status BMKG: ${q.Potensi || 'Tetap waspada terhadap gempa susulan'}`);
+  setTxt('qm-dirasakan', `Wilayah Dirasakan: ${q.Dirasakan || 'Belum dilaporkan BMKG'}`);
+  setTxt('qm-potensi', `Status BMKG: ${q.Potensi || 'Informasi potensi tsunami belum tersedia'}`);
 
   const imgBox = document.getElementById('qm-shakemap-box');
   const imgEl = document.getElementById('qm-shakemap-img');
@@ -3455,6 +3564,9 @@ function showQuakeAlertModal(q) {
     }
   }
 
+  activeQuake = q;
+  setTxt('qm-label', q.isSimulation ? 'SIMULASI · BUKAN KEJADIAN NYATA' : 'INFORMASI GEMPA · BMKG');
+  setTxt('qm-source', 'Sumber: BMKG · Diterima ' + new Date().toLocaleTimeString('id-ID', {timeZone:'Asia/Jakarta'}) + ' WIB · Jarak merupakan estimasi episentrum, bukan intensitas.');
   ov.classList.add('active');
   const qkCfg = currentDisplayConfig?.quakeConfig || { soundEnable: true, durationSec: 45 };
   let rem = Number(qkCfg.durationSec) || 45;
@@ -3474,11 +3586,11 @@ async function pollBmkgRealtimeBengkulu() {
   const qkCfg = currentDisplayConfig?.quakeConfig || { autoEnable: true, radiusKm: 250 };
   if (qkCfg.autoEnable === false) return;
   try {
-    const res = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json');
-    if (!res.ok) return;
+    const res = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json', {cache:'no-store', signal:AbortSignal.timeout(10000)});
+    if (!res.ok) throw new Error('BMKG HTTP ' + res.status);
     const data = await res.json();
     const g = data?.Infogempa?.gempa;
-    if (!g) return;
+    if (!g || !Number.isFinite(Number(g.Magnitude)) || !g.DateTime) throw new Error('Data BMKG tidak valid');
 
     let distBenteng = 9999, distKota = 9999;
     if (g.Coordinates) {
@@ -3501,17 +3613,23 @@ async function pollBmkgRealtimeBengkulu() {
         hdrTxt.textContent = `M${g.Magnitude} (${minDist}km)`;
       } else {
         hdrPill.classList.remove('warn');
-        hdrTxt.textContent = `Aman (Terakhir M${g.Magnitude})`;
+        hdrTxt.textContent = `Terakhir M${g.Magnitude} · luar radius`;
       }
     }
 
+    hdrPill.title = 'BMKG · Diperiksa ' + new Date().toLocaleTimeString('id-ID', {timeZone:'Asia/Jakarta'}) + ' WIB · Pembaruan tiap 30 detik';
+    const age = Date.now() - Date.parse(g.DateTime);
     const qKey = `${g.DateTime || g.Tanggal + '_' + g.Jam}_${g.Magnitude}`;
-    if (isRelevantBengkulu && qKey !== lastSeenQuakeKey) {
+    if (isRelevantBengkulu && age >= 0 && age < 15 * 60 * 1000 && qKey !== lastSeenQuakeKey) {
       lastSeenQuakeKey = qKey;
       try { localStorage.setItem('lb-last-quake-key', qKey); } catch (e) {}
       showQuakeAlertModal(g);
     }
-  } catch (e) {}
+  } catch (e) {
+    const el = document.getElementById('bmkg-hdr-txt');
+    if (el) el.textContent = 'Data tidak tersedia';
+    document.getElementById('bmkg-hdr-pill')?.classList.remove('warn');
+  }
 }
 pollBmkgRealtimeBengkulu();
 setInterval(pollBmkgRealtimeBengkulu, 30 * 1000);
@@ -3863,10 +3981,10 @@ setInterval(() => {
   </div>
 
   <!-- Overlay Peringatan Gempa Bumi Realtime (BMKG - Kota Bengkulu & Kab. Bengkulu Tengah) -->
-  <div id="quake-alert-overlay" role="alertdialog" aria-live="assertive">
+  <div id="quake-alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="qm-label" aria-live="assertive">
     <div class="quake-modal">
       <div class="quake-modal-head">
-        <h2>PERINGATAN GEMPA BUMI REALTIME (BMKG)</h2>
+        <h2 id="qm-label">INFORMASI GEMPA · BMKG</h2><button type="button" id="qm-close" aria-label="Tutup informasi gempa">Tutup <span id="quake-countdown"></span></button>
 </div>
       <div class="quake-modal-body">
         <div>
@@ -3878,7 +3996,7 @@ setInterval(() => {
           <div class="text-lg font-extrabold text-amber-300 mb-1" id="qm-wilayah">Pusat gempa di wilayah Bengkulu</div>
           <div class="text-sm text-gray-200 mb-2" id="qm-waktu">Waktu: --</div>
           <div class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 border border-white/15 mb-2" id="qm-dirasakan">Dirasakan: -</div>
-          <div class="text-xs font-bold text-emerald-300" id="qm-potensi">Potensi: -</div>
+          <div class="text-xs font-bold text-emerald-300" id="qm-potensi">Potensi: -</div><p class="quake-guidance">Saat terasa guncangan: merunduk, berlindung, berpegangan. Jauhi kaca. Ikuti arahan petugas.</p><p id="qm-source"></p>
         </div>
         <div class="quake-shakemap" id="qm-shakemap-box">
           <img id="qm-shakemap-img" alt="Peta Guncangan BMKG" src="https://iili.io/nwp1YYl.jpg">
@@ -3886,7 +4004,7 @@ setInterval(() => {
       </div>
     </div>
   </div>
-
+<script>document.getElementById('qm-close').onclick = () => window.dispatchEvent(new Event('close-quake'));</script>
 </body>
 
 </html>

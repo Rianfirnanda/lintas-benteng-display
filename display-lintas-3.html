@@ -295,6 +295,38 @@
         }
 
     </style>
+<style>
+:root { --bg:#f2f5f8; --card:#ffffffc9; --border:#dce4eb; --text:#203347; --muted:#607387; --blue:#326e97; --purple:#326e97; --teal:#357f87; --green:#28745e; --orange:#976620; }
+body { background:radial-gradient(ellipse at 100% 0%,#e1ebf3,transparent 50%),var(--bg); line-height:1.55; }
+.sidebar,.topbar { background:rgba(248,251,253,.9); backdrop-filter:blur(22px); }
+.logo-text { background:none; -webkit-text-fill-color:var(--text); letter-spacing:.04em; }
+.avatar { background:#326e97; }
+.stat-card,.chart-card,.eoq-card,.pk-card,.quick-controls { background:var(--card) !important; border:1px solid var(--border) !important; border-radius:14px !important; box-shadow:0 4px 18px #20334705 !important; }
+.stat-card::before,.stat-card::after { display:none !important; }
+.stat-value { color:var(--text) !important; font-variant-numeric:tabular-nums; }
+.btn { border-radius:8px !important; box-shadow:none !important; font-weight:600; }
+.btn.primary { background:var(--blue) !important; color:white; }
+input,select,textarea,.pk-input,.pk-select { background:#fff !important; color:var(--text) !important; border:1px solid #cedae4 !important; border-radius:8px !important; }
+input:focus,select:focus,textarea:focus { outline:2px solid #326e9740; outline-offset:2px; }
+.field { color:var(--muted); font-size:12px; line-height:1.6; }
+.nav-item.active,.pk-tab.active { background:#e6eff6 !important; color:#285b7e !important; border-color:#c7dae8 !important; }
+.pk-tabs { gap:6px; }
+.pk-tab { border-radius:8px !important; }
+.stat-card:hover { transform:none !important; }
+.sidebar-user small,.logo-badge,.nav-section-label { color:var(--muted); }
+[style*="color:#fff"],[style*="color: #fff"] { color:var(--text) !important; }
+@media(prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+</style>
+<style>
+.page-header h1,.section-title,.chart-header h3,.eoq-title { color:var(--text) !important; }
+.btn,.pk-tab,.ch-cat-btn,.channel,.current,.toolbar-row,.vol-box,.yt-item,.dyn-item,.dnd-card,.dnd-row-item { background:rgba(255,255,255,.8); color:var(--text); border-color:var(--border); }
+.channel.active,.ch-cat-btn.active { background:#e1edf5; color:#234f71; border-color:#9fbfd5; }
+.stat-icon.blue,.stat-icon.purple,.stat-icon.teal,.stat-icon.green,.stat-icon.orange { background:#e4edf4; color:#386783; }
+.hint { color:var(--muted); }
+.sidebar,.topbar,.sidebar-footer { border-color:var(--border); }
+.btn.success { color:#26715b; border-color:#9fc7b9; }
+.field select option,.pk-select option { background:white; color:var(--text); }
+</style>
 </head>
 <body>
 
@@ -775,13 +807,13 @@
             </div>
 
             <!-- PANE 5: JADWAL SHOLAT & VIDEO OTOMATIS -->
-            <div class="pk-pane" id="pane-schedules">
+            <div class="pk-pane" id="pane-schedules"><p class="hint" style="margin-bottom:20px">Indonesia Raya dilanjutkan SE 2026 saat masuk 07.30 dan pulang 16.00 (Jumat 16.30), zona WIB. Sabtu–Minggu tidak diputar. Aktifkan jadwal dan izinkan audio pada layar display. Azan memakai jadwal harian Kabupaten Bengkulu Tengah.</p>
                 <div class="eoq-form">
-                    <label class="field">Jam Putar Video Sensus Ekonomi (Pisahkan koma)
-                        <input type="text" id="cfg-sched-sensus" value="07:25, 15:55" placeholder="07:25, 15:55">
+                    <label class="field">SE 2026 · Senin–Jumat, WIB
+                        <input type="text" id="cfg-sched-sensus" readonly value="07:30, 16:00 (Jumat 16:30)" placeholder="07:30, 16:00 (Jumat 16:30)">
                     </label>
-                    <label class="field">Jam Putar Lagu Indonesia Raya (Pisahkan koma)
-                        <input type="text" id="cfg-sched-ir" value="10:00" placeholder="10:00">
+                    <label class="field">Indonesia Raya · Senin–Jumat, WIB
+                        <input type="text" id="cfg-sched-ir" value="07:30, 16:00 (Jumat 16:30)" readonly>
                     </label>
                     <label class="field full">
                         <span style="display:inline-flex;align-items:center;gap:8px;">
@@ -1195,8 +1227,8 @@
             ['Hadits', 'خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ', 'Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.', 'HR. Ahmad & Thabrani']
         ],
         schedules: {
-            sensus: ['07:25', '15:55'],
-            ir: ['10:00'],
+            sensus: ['07:30', '16:00'],
+            ir: ['07:30', '16:00'],
             manualSholat: false,
             sholatTimes: { Fajr: '04:40', Dhuhr: '12:04', Asr: '15:22', Maghrib: '18:06', Isha: '19:16' }
         },
@@ -2100,9 +2132,10 @@
         const headline = $('qk-headline'), sub = $('qk-sub'), tbody = $('qk-table-body');
         try {
             const [autoRes, feltRes] = await Promise.all([
-                fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json'),
-                fetch('https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json').catch(() => null)
+                fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json', {cache:'no-store',signal:AbortSignal.timeout(10000)}),
+                fetch('https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json', {cache:'no-store',signal:AbortSignal.timeout(10000)}).catch(() => null)
             ]);
+            if (!autoRes.ok) throw new Error('BMKG HTTP ' + autoRes.status);
             const autoData = await autoRes.json();
             const g = autoData?.Infogempa?.gempa;
             const feltData = feltRes && feltRes.ok ? await feltRes.json().catch(() => null) : null;
@@ -2159,7 +2192,7 @@
 
     $('btn-check-bmkg')?.addEventListener('click', () => {
         fetchBmkgQuakes();
-        $('qk-feedback').textContent = 'Data gempa terbaru dari API BMKG berhasil diperbarui.';
+        $('qk-feedback').textContent = 'Mengambil pembaruan BMKG… Periksa status di atas.';
     });
 
     $('btn-sim-quake')?.addEventListener('click', () => {
