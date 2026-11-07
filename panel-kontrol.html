@@ -18,7 +18,7 @@
   <link rel="shortcut icon" href="/favicon.ico" />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem("tv-theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
   <script>
 window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABBl321g0v2sem&sz=w1000";
 </script>
@@ -67,7 +67,7 @@ window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABB
         radial-gradient(ellipse 900px 600px at 50% 115%, rgba(212,175,90,0.06), transparent 60%),
         linear-gradient(160deg, var(--ink-900) 0%, var(--ink-800) 45%, #0a0f1c 100%);
     }
-    /* fine engineering dot-grid texture — subtle "command center" feel */
+    /* fine engineering dot-grid texture - subtle "command center" feel */
     body::before {
       content: '';
       position: fixed;
@@ -99,7 +99,7 @@ window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABB
     .styled-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,90,0.35); border-radius: 999px; }
     .styled-scroll::-webkit-scrollbar-thumb:hover { background: rgba(212,175,90,0.55); }
 
-    /* Unified card chrome — clipped corner + gold overline, broadcast-panel feel */
+    /* Unified card chrome - clipped corner + gold overline, broadcast-panel feel */
     .panel {
       position: relative;
       background: var(--panel-bg);
@@ -119,7 +119,7 @@ window.EOQ_PHOTO = "https://drive.google.com/thumbnail?id=1ShSBTLFCD0_1pFWqhTABB
       opacity: 0.95;
     }
 
-    /* Featured panel — for the sections that need to stand out (Kalender, EOQ) */
+    /* Featured panel - for the sections that need to stand out (Kalender, EOQ) */
     .panel-featured {
       position: relative;
       background: linear-gradient(165deg, rgba(212,175,90,0.08), rgba(255,255,255,0.03));
@@ -886,15 +886,15 @@ button,input,select,textarea { font:inherit; }
  window.applyDisplayTheme = theme => {
    if (!['light','dark'].includes(theme)) return;
    document.documentElement.dataset.theme = theme;
-   try { localStorage.setItem('theme',theme); } catch {}
+   try { localStorage.setItem('tv-theme',theme); } catch {}
  };
  try {
    const cfg = JSON.parse(localStorage.getItem(key) || 'null');
-   applyDisplayTheme(cfg?.theme || localStorage.getItem('theme') || 'dark');
+   applyDisplayTheme(cfg?.theme || localStorage.getItem('tv-theme') || 'dark');
  } catch { applyDisplayTheme('dark'); }
  window.addEventListener('storage', e => {
    if (e.key === key) { try { applyDisplayTheme(JSON.parse(e.newValue)?.theme); } catch {} }
-   if (e.key === 'theme') applyDisplayTheme(e.newValue);
+   if (e.key === 'tv-theme') applyDisplayTheme(e.newValue);
  });
 })();
 </script>
@@ -1887,7 +1887,7 @@ function tampilkanPopupAzan(sholat) {
   if (playPromise !== undefined) {
     playPromise.catch(err => {
       console.error("Gagal memutar azan:", err);
-      judul.innerText = `Waktu ${capitalizeWord(sholat)} — tekan untuk memutar azan`;
+      judul.innerText = `Waktu ${capitalizeWord(sholat)} - tekan untuk memutar azan`;
     });
   }
 
@@ -3217,7 +3217,7 @@ function applyFullDisplayConfig(cfg) {
   // 1. Tema
   if (cfg.theme === 'light' || cfg.theme === 'dark') {
     window.applyDisplayTheme(cfg.theme);
-    try { localStorage.setItem('theme', cfg.theme); } catch {}
+    try { localStorage.setItem('tv-theme', cfg.theme); } catch {}
   }
 
   // 2. Identitas Header & Footer

@@ -295,69 +295,13 @@
         }
 
     </style>
-<style>
-:root { --bg:#f2f5f8; --card:#ffffffc9; --border:#dce4eb; --text:#203347; --muted:#607387; --blue:#326e97; --purple:#326e97; --teal:#357f87; --green:#28745e; --orange:#976620; }
-body { background:radial-gradient(ellipse at 100% 0%,#e1ebf3,transparent 50%),var(--bg); line-height:1.55; }
-.sidebar,.topbar { background:rgba(248,251,253,.9); backdrop-filter:blur(22px); }
-.logo-text { background:none; -webkit-text-fill-color:var(--text); letter-spacing:.04em; }
-.avatar { background:#326e97; }
-.stat-card,.chart-card,.eoq-card,.pk-card,.quick-controls { background:var(--card) !important; border:1px solid var(--border) !important; border-radius:14px !important; box-shadow:0 4px 18px #20334705 !important; }
-.stat-card::before,.stat-card::after { display:none !important; }
-.stat-value { color:var(--text) !important; font-variant-numeric:tabular-nums; }
-.btn { border-radius:8px !important; box-shadow:none !important; font-weight:600; }
-.btn.primary { background:var(--blue) !important; color:white; }
-input,select,textarea,.pk-input,.pk-select { background:#fff !important; color:var(--text) !important; border:1px solid #cedae4 !important; border-radius:8px !important; }
-input:focus,select:focus,textarea:focus { outline:2px solid #326e9740; outline-offset:2px; }
-.field { color:var(--muted); font-size:12px; line-height:1.6; }
-.nav-item.active,.pk-tab.active { background:#e6eff6 !important; color:#285b7e !important; border-color:#c7dae8 !important; }
-.pk-tabs { gap:6px; }
-.pk-tab { border-radius:8px !important; }
-.stat-card:hover { transform:none !important; }
-.sidebar-user small,.logo-badge,.nav-section-label { color:var(--muted); }
-[style*="color:#fff"],[style*="color: #fff"] { color:var(--text) !important; }
-@media(prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
-</style>
-<style>
-.page-header h1,.section-title,.chart-header h3,.eoq-title { color:var(--text) !important; }
-.btn,.pk-tab,.ch-cat-btn,.channel,.current,.toolbar-row,.vol-box,.yt-item,.dyn-item,.dnd-card,.dnd-row-item { background:rgba(255,255,255,.8); color:var(--text); border-color:var(--border); }
-.channel.active,.ch-cat-btn.active { background:#e1edf5; color:#234f71; border-color:#9fbfd5; }
-.stat-icon.blue,.stat-icon.purple,.stat-icon.teal,.stat-icon.green,.stat-icon.orange { background:#e4edf4; color:#386783; }
-.hint { color:var(--muted); }
-.sidebar,.topbar,.sidebar-footer { border-color:var(--border); }
-.btn.success { color:#26715b; border-color:#9fc7b9; }
-.field select option,.pk-select option { background:white; color:var(--text); }
-</style>
-<style>
-/* Shared palette for the display and its control panel. */
-:root,html[data-theme="dark"] {
- --lb-bg:#101c28; --lb-text:#edf3f8; --lb-muted:#aebdcb; --lb-accent:#83b4d5;
- --lb-surface:rgba(28,43,58,.78); --lb-fill:rgba(255,255,255,.05); --lb-border:rgba(200,221,237,.16);
- --text:var(--lb-text); --text-dim:var(--lb-muted); --muted:var(--lb-muted);
- --bg:var(--lb-bg); --surface:var(--lb-surface); --card:var(--lb-surface); --border:var(--lb-border);
- --glass-bg:var(--lb-surface); --glass-bg-hero:var(--lb-surface); --fill:var(--lb-fill);
- --gold-300:var(--lb-accent); --gold-400:var(--lb-accent); --gold-500:#588baa;
- --blue:var(--lb-accent); --purple:var(--lb-accent); --steel-300:var(--lb-muted); --panel-border:var(--lb-border);
- --panel-border-soft:var(--lb-border); --lb-action:#326e97;
-}
-html[data-theme="light"] {
- --lb-bg:#edf2f5; --lb-text:#203346; --lb-muted:#506578; --lb-accent:#315f80;
- --lb-surface:rgba(255,255,255,.78); --lb-fill:rgba(255,255,255,.5); --lb-border:rgba(57,87,108,.16);
- --gold-500:#477a99;
-}
-html[data-theme] body { background:radial-gradient(ellipse at 80% 0%,rgba(101,151,177,.12),transparent 55%),var(--lb-bg) !important; color:var(--lb-text); }
-button,input,select,textarea { font:inherit; }
-:where(button,input,select,textarea):focus-visible { outline:2px solid var(--lb-accent); outline-offset:3px; }
 
-html[data-theme] .sidebar,html[data-theme] .topbar { background:var(--lb-surface); border-color:var(--lb-border); }
-html[data-theme] .stat-card,html[data-theme] .chart-card,html[data-theme] .quick-controls { background:var(--lb-surface) !important; }
-html[data-theme] :is(.btn,.pk-tab,.ch-cat-btn,.channel,.current,.toolbar-row,.vol-box,.yt-item,.dyn-item,.dnd-card,.dnd-row-item,.pk-input,.pk-select,.pk-textarea,.field input,.field select,.field textarea,select option) { background:var(--lb-fill) !important; color:var(--lb-text) !important; border-color:var(--lb-border) !important; }
-html[data-theme] select option { background:var(--lb-bg) !important; }
-html[data-theme] .btn.primary { background:var(--lb-action) !important; color:#fff !important; }
-html[data-theme] :is(.pk-tab,.ch-cat-btn,.channel,.nav-item).active { color:var(--lb-accent) !important; background:var(--lb-fill) !important; border-color:var(--lb-accent) !important; }
-html[data-theme] .logo-text,html[data-theme] .page-header h1,html[data-theme] .section-title,html[data-theme] .chart-header h3 { color:var(--lb-text) !important; -webkit-text-fill-color:var(--lb-text); }
-html[data-theme] .hint,html[data-theme] .field { color:var(--lb-muted); }
-html[data-theme] .section-title::after { background:var(--lb-border); }
-html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--lb-accent); }
+
+
+
+
+<style>
+/* Admin appearance is independent of the TV theme setting. */
 .eoq-form > *, .toolbar-group, .chart-header > *, .page-header > * { min-width:0; }
 @media(max-width:768px) {
  .content { max-width:100%; }
@@ -369,25 +313,6 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
  .quake-table-wrap { max-width:100%; overflow:auto; }
 }
 </style>
-<script>
-(() => {
- const key = 'lintasbenteng-display-config';
- window.applyDisplayTheme = theme => {
-   if (!['light','dark'].includes(theme)) return;
-   document.documentElement.dataset.theme = theme;
-   try { localStorage.setItem('theme',theme); } catch {}
- };
- try {
-   const cfg = JSON.parse(localStorage.getItem(key) || 'null');
-   applyDisplayTheme(cfg?.theme || localStorage.getItem('theme') || 'dark');
- } catch { applyDisplayTheme('dark'); }
- window.addEventListener('storage', e => {
-   if (e.key === key) { try { applyDisplayTheme(JSON.parse(e.newValue)?.theme); } catch {} }
-   if (e.key === 'theme') applyDisplayTheme(e.newValue);
- });
-})();
-</script>
-
 </head>
 <body>
 
@@ -459,25 +384,25 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
         <div class="stat-grid">
             <div class="stat-card green" id="card-conn">
                 <div class="stat-icon green"><i data-feather="monitor"></i></div>
-                <div class="stat-value" id="st-conn">—</div>
+                <div class="stat-value" id="st-conn">-</div>
                 <div class="stat-label">Status Display</div>
                 <div class="stat-trend" id="st-conn-sub">menunggu koneksi…</div>
             </div>
             <div class="stat-card blue">
                 <div class="stat-icon blue"><i data-feather="tv"></i></div>
-                <div class="stat-value" id="st-channel">—</div>
+                <div class="stat-value" id="st-channel">-</div>
                 <div class="stat-label">Channel Aktif</div>
                 <div class="stat-trend up">Realtime</div>
             </div>
             <div class="stat-card purple" id="card-auto">
                 <div class="stat-icon purple"><i data-feather="volume-2"></i></div>
-                <div class="stat-value" id="st-auto">—</div>
+                <div class="stat-value" id="st-auto">-</div>
                 <div class="stat-label">Azan · Lagu · Video</div>
                 <div class="stat-trend" id="st-auto-sub">diaktifkan dari layar display</div>
             </div>
             <div class="stat-card orange" id="card-unlock">
                 <div class="stat-icon orange"><i data-feather="mouse-pointer"></i></div>
-                <div class="stat-value" id="st-unlock">—</div>
+                <div class="stat-value" id="st-unlock">-</div>
                 <div class="stat-label">Izin Suara Browser</div>
                 <div class="stat-trend" id="st-unlock-sub">perlu 1 klik di display</div>
             </div>
@@ -742,11 +667,12 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
             <!-- PANE 2: IDENTITAS, TEMA & HEADER -->
             <div class="pk-pane" id="pane-header">
                 <div class="eoq-form">
-                    <label class="field">Tema Tampilan Display
+                    <label class="field">Tema TV (hanya layar display)
                         <select id="cfg-theme">
-                            <option value="dark">Mode Gelap (Dark Command Center)</option>
-                            <option value="light">Mode Terang (Light Glassmorphism)</option>
+                            <option value="dark">Gelap</option>
+                            <option value="light">Terang</option>
                         </select>
+                        <small class="hint">Tidak mengubah tema panel kontrol atau dashboard utama.</small>
                     </label>
                     <label class="field">Posisi Panel Bawah (Kalender/Cuaca vs Jadwal Sholat)
                         <select id="cfg-sholat-swap">
@@ -1098,19 +1024,19 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
         setTrend('st-conn-sub', online ? 'display terhubung' : 'display offline / belum dibuka', online ? 'up' : 'down');
 
         const ch = Number.isInteger(status?.channel) ? status.channel : selectedChannel;
-        $('st-channel').textContent = channels[ch] || '—';
+        $('st-channel').textContent = channels[ch] || '-';
 
         const a = status?.autoOn;
         const autoBtn = $('btn-auto-schedules');
         const autoState = $('auto-schedules-state');
         if (autoBtn) autoBtn.textContent = a === true ? 'Matikan jadwal otomatis' : 'Aktifkan jadwal otomatis';
         if (autoState) autoState.textContent = online ? `Jadwal otomatis: ${a === true ? 'aktif' : a === false ? 'mati' : 'belum dikonfirmasi'}` : 'Status display: offline';
-        if (!online) { $('st-auto').textContent = '—'; setTrend('st-auto-sub', 'menunggu display online', 'warn'); }
+        if (!online) { $('st-auto').textContent = '-'; setTrend('st-auto-sub', 'menunggu display online', 'warn'); }
         else if (a === true) { $('st-auto').textContent = 'AKTIF'; setTrend('st-auto-sub', 'azan, Indonesia Raya & video SE2026 siap', 'up'); }
         else if (a === false) { $('st-auto').textContent = 'MATI'; setTrend('st-auto-sub', 'diatur dari panel kontrol', 'warn'); }
-        else { $('st-auto').textContent = '—'; setTrend('st-auto-sub', 'diaktifkan dari layar display', ''); }
+        else { $('st-auto').textContent = '-'; setTrend('st-auto-sub', 'diaktifkan dari layar display', ''); }
 
-        if (!online) { $('st-unlock').textContent = '—'; setTrend('st-unlock-sub', 'menunggu display online', 'warn'); }
+        if (!online) { $('st-unlock').textContent = '-'; setTrend('st-unlock-sub', 'menunggu display online', 'warn'); }
         else if (status.unlocked === false) { $('st-unlock').textContent = 'BELUM'; setTrend('st-unlock-sub', 'klik/sentuh layar display 1×', 'down'); }
         else { $('st-unlock').textContent = 'OK'; setTrend('st-unlock-sub', 'audio & video boleh diputar', 'up'); }
     }
@@ -1268,7 +1194,7 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
             mode: 'both',
             speedSec: 240,
             customMessages: [
-                'Selamat Datang di Badan Pusat Statistik Kabupaten Bengkulu Tengah — Melayani dengan Profesional, Integritas, dan Amanah.'
+                'Selamat Datang di Badan Pusat Statistik Kabupaten Bengkulu Tengah - Melayani dengan Profesional, Integritas, dan Amanah.'
             ]
         },
         customAgenda: [],
@@ -1332,10 +1258,8 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
     // Fungsi kirim ke Display (Firestore + BroadcastChannel + localStorage)
     $('cfg-theme')?.addEventListener('change', () => {
         displayConfig.theme = $('cfg-theme').value;
-        window.applyDisplayTheme(displayConfig.theme);
-        syncToDisplay({ displayConfig }, 'Tema panel kontrol dan display diperbarui.', $('cust-feedback'));
+        syncToDisplay({ displayConfig }, 'Tema TV diperbarui.', $('cust-feedback'));
     });
-    window.applyDisplayTheme(displayConfig.theme);
     async function syncToDisplay(patch, msg = 'Perubahan dikirim ke display.', feedbackEl = feedback, silent = false) {
         try {
             localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify(displayConfig));
@@ -1900,7 +1824,7 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
                 <div class="dnd-row-item" data-idx="${idx}">
                     <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;">
                         <span class="dnd-grip">☰</span>
-                        <span>Urutan #${idx + 1} — ${r.label}</span>
+                        <span>Urutan #${idx + 1} - ${r.label}</span>
                     </div>
                     <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
                         <input type="checkbox" class="row-vis-chk" data-idx="${idx}" ${r.visible ? 'checked' : ''}> Tampilkan Baris
@@ -2024,7 +1948,7 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
             const ags = displayConfig.customAgenda || [];
             agBox.innerHTML = ags.length ? ags.map((a, i) => `
                 <div class="dyn-item">
-                    <span><b>${a.time}</b> — ${a.title} ${a.desc ? '(' + a.desc + ')' : ''}</span>
+                    <span><b>${a.time}</b> - ${a.title} ${a.desc ? '(' + a.desc + ')' : ''}</span>
                     <button type="button" class="btn sm danger del-ag" data-i="${i}">Hapus</button>
                 </div>
             `).join('') : '<p class="hint">Belum ada agenda kustom tambahan.</p>';
@@ -2041,7 +1965,7 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
             const hps = displayConfig.customHariPenting || [];
             hpBox.innerHTML = hps.map(([m, d, name], i) => `
                 <div class="dyn-item">
-                    <span><b>${d}/${m}</b> — ${name}</span>
+                    <span><b>${d}/${m}</b> - ${name}</span>
                     <button type="button" class="btn sm danger del-hp" data-i="${i}">Hapus</button>
                 </div>
             `).join('');
@@ -2274,7 +2198,7 @@ html[data-theme] .stat-icon { background:var(--lb-fill) !important; color:var(--
             Magnitude: '5.1',
             Kedalaman: '14 km',
             Wilayah: 'Pusat gempa berada di darat 8 km Barat Daya Kab. Bengkulu Tengah / 7 km Timur Kota Bengkulu',
-            Potensi: 'Tidak berpotensi TSUNAMI — Harap tetap tenang dan waspada terhadap gempa susulan',
+            Potensi: 'Tidak berpotensi TSUNAMI - Harap tetap tenang dan waspada terhadap gempa susulan',
             Dirasakan: 'Dirasakan di Kab. Bengkulu Tengah (III-IV MMI), Kota Bengkulu (III-IV MMI), Kepahiang (III MMI)',
             isSimulation: true
         };
