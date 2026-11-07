@@ -2078,9 +2078,51 @@ checkJadwal();
     if (!window.__LB_REMOTE_SYNC_ENABLED__) {
       console.warn('[BOOT] Mode file:// terdeteksi. Firebase, Google Maps, dan media storage dinonaktifkan agar tidak error. Jalankan halaman dari http://localhost atau domain agar panel kontrol dan display tersambung.');
     } else {
+      window.ensureTrackingMap = () => {
+        if (window.__lbTrackingMap) return window.__lbTrackingMap;
+        if (typeof window.google?.maps?.Map !== 'function') return null;
+      window.__lbTrackingMap = new google.maps.Map(document.getElementById("tracking-map"), {
+    zoom: 11,
+    center: { lat: -3.693, lng: 102.258 },
+    gestureHandling: "greedy",
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+      { elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+      { elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+      { elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+      { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
+      { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
+      { featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#263c3f'}]},
+      { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#6b9a76'}]},
+      { featureType: 'road', elementType: 'geometry', stylers: [{color: '#38414e'}]},
+      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{color: '#212a37'}]},
+      { featureType: 'road', elementType: 'labels.text.fill', stylers: [{color: '#9ca5b3'}]},
+      { featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#746855'}]},
+      { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{color: '#1f2835'}]},
+      { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{color: '#f3d19c'}]},
+      { featureType: 'transit', elementType: 'geometry', stylers: [{color: '#2f3948'}]},
+      { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
+      { featureType: 'water', elementType: 'geometry', stylers: [{color: '#17263c'}]},
+      { featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#515c6d'}]},
+      { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{color: '#17263c'}]}
+    ]
+  });
+        return window.__lbTrackingMap;
+      };
+      window.__lbMapsReady = () => {
+        try {
+          window.ensureTrackingMap();
+          window.dispatchEvent(new Event('maps-ready'));
+        } catch (error) {
+          const el=document.getElementById('map-status');
+          if(el){el.hidden=false;el.textContent='Peta belum dapat ditampilkan. Periksa koneksi Google Maps.';}
+          console.warn('[MAP]',error.message);
+        }
+      };
       const mapsScript = document.createElement('script');
-      mapsScript.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyC018aYDJGRgCARTQs7Ew8UNoVIjZOJl8Y';
-      mapsScript.onload = () => window.dispatchEvent(new Event('maps-ready'));
+      mapsScript.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyC018aYDJGRgCARTQs7Ew8UNoVIjZOJl8Y&loading=async&callback=__lbMapsReady';
+      mapsScript.onload = () => { if (typeof window.google?.maps?.Map === 'function') window.__lbMapsReady(); };
       mapsScript.onerror = () => { const e=document.getElementById('map-status'); if(e){e.hidden=false;e.textContent='Google Maps gagal dimuat. Periksa koneksi dan izin domain API.';} };
       window.gm_authFailure = () => { const e=document.getElementById('map-status'); if(e){e.hidden=false;e.textContent='Google Maps menolak akses. Periksa billing, Maps JavaScript API, dan izin domain pada Google Cloud.';} };
       mapsScript.async = true;
@@ -2106,6 +2148,7 @@ const REMOTE_SYNC_ENABLED = window.__LB_REMOTE_SYNC_ENABLED__ === true;
 const app = REMOTE_SYNC_ENABLED ? initializeApp(firebaseConfig) : null;
 const db = REMOTE_SYNC_ENABLED ? getFirestore(app) : null;
 
+let mapTrackingStarted = false;
 let map, mapInfoWindow, markers = {}, targetPositions = {}, polylines = {};
 const INACTIVE_THRESHOLD = 30 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -2134,39 +2177,13 @@ function isValidCoordinate(lat, lng) {
 }
 
 function initMap() {
-  if (map) return;
-  if (!getAuth(app)?.currentUser) return;
-  if (!REMOTE_SYNC_ENABLED || !db || !window.google || !window.google.maps) {
+  if (!REMOTE_SYNC_ENABLED || !db || !window.google || typeof window.google.maps?.Map !== 'function') {
     console.warn('[MAP] Google Maps/Firebase dinonaktifkan karena origin saat ini tidak mendukung koneksi remote. Jalankan dari http://localhost untuk aktifkan tracking.');
     return;
   }
-  map = new google.maps.Map(document.getElementById("tracking-map"), {
-    zoom: 11,
-    center: { lat: -3.693, lng: 102.258 },
-    gestureHandling: "greedy",
-    disableDefaultUI: true,
-    zoomControl: true,
-    styles: [
-      { elementType: 'geometry', stylers: [{color: '#242f3e'}]},
-      { elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
-      { elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
-      { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
-      { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
-      { featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#263c3f'}]},
-      { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#6b9a76'}]},
-      { featureType: 'road', elementType: 'geometry', stylers: [{color: '#38414e'}]},
-      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{color: '#212a37'}]},
-      { featureType: 'road', elementType: 'labels.text.fill', stylers: [{color: '#9ca5b3'}]},
-      { featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#746855'}]},
-      { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{color: '#1f2835'}]},
-      { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{color: '#f3d19c'}]},
-      { featureType: 'transit', elementType: 'geometry', stylers: [{color: '#2f3948'}]},
-      { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{color: '#d59563'}]},
-      { featureType: 'water', elementType: 'geometry', stylers: [{color: '#17263c'}]},
-      { featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#515c6d'}]},
-      { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{color: '#17263c'}]}
-    ]
-  });
+  map = window.ensureTrackingMap?.();
+  if (!map || mapTrackingStarted || !getAuth(app)?.currentUser) return;
+  mapTrackingStarted = true;
 
   mapInfoWindow = new google.maps.InfoWindow();
   onSnapshot(collection(db, "active_tracking"), snapshot => {
@@ -2366,6 +2383,11 @@ function initMap() {
 
     updateActivitySlider();
     cleanInactiveMarkers(currentActiveIds);
+    const notice=document.getElementById('map-status');
+    if(notice?.dataset.trackingError==='true'){notice.hidden=true;delete notice.dataset.trackingError;}
+  }, error => {
+    const notice=document.getElementById('map-status');
+    if(notice){notice.hidden=false;notice.dataset.trackingError='true';notice.textContent='Peta tersedia. Data tracking belum terhubung: '+(error.code || 'koneksi terputus');}
   });
 
   animateMarkers();
