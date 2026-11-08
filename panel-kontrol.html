@@ -3062,7 +3062,7 @@ function applyAudioControlState(ac) {
 
   if (ac.triggerMedia && Number(ac.ts) > lastMediaTriggerTs && Date.now() - ac.ts < 15000) {
     lastMediaTriggerTs = Number(ac.ts);
-    if (ac.triggerMedia === 'azan' && typeof tampilkanPopupAzan === 'function') tampilkanPopupAzan('Subuh');
+    if (ac.triggerMedia === 'azan' && typeof tampilkanPopupAzan === 'function') tampilkanPopupAzan('manual (uji audio)');
     else if (ac.triggerMedia === 'ir' && typeof showIndonesiaRayaPopup === 'function') showIndonesiaRayaPopup();
     else if (ac.triggerMedia === 'sensus' && typeof showVideoPopup === 'function') showVideoPopup();
     else if (ac.triggerMedia === 'stop') {

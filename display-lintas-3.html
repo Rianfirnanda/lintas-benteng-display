@@ -552,7 +552,7 @@ window.decodeDisplayData = value => {
                 </div>
                 <div class="toolbar-group">
                     <span style="font-size:12px;font-weight:700;color:var(--muted);">Pemicu Media Jadwal:</span>
-                    <button type="button" id="btn-trig-azan" class="btn sm"><i data-feather="bell"></i>Putar Azan</button>
+                    <button type="button" id="btn-trig-azan" class="btn sm"><i data-feather="bell"></i>Uji Audio Azan</button>
                     <button type="button" id="btn-trig-ir" class="btn sm"><i data-feather="music"></i>Indonesia Raya</button>
                     <button type="button" id="btn-trig-sensus" class="btn sm"><i data-feather="bar-chart-2"></i>Video SE2026</button>
                     <button type="button" id="btn-trig-stopmedia" class="btn sm danger"><i data-feather="x-circle"></i>Tutup Popup Video/Azan</button>
@@ -1677,7 +1677,7 @@ window.decodeDisplayData = value => {
     });
 
     // Tombol pemicu Azan / Indonesia Raya / Video SE2026 dari Panel Kontrol
-    $('btn-trig-azan')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'azan' }, 'Memutar Azan di layar display.'));
+    $('btn-trig-azan')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'azan' }, 'Uji audio azan manual dikirim. Pemutaran otomatis tetap mengikuti jadwal salat.'));
     $('btn-trig-ir')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'ir' }, 'Memutar Lagu Indonesia Raya di layar display.'));
     $('btn-trig-sensus')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'sensus' }, 'Memutar Video SE2026 di layar display.'));
     $('btn-trig-stopmedia')?.addEventListener('click', () => sendAudioUpdate({ triggerMedia: 'stop' }, 'Menutup popup media di layar display.'));
