@@ -2754,12 +2754,12 @@ const PRELOAD_MINUTES_BEFORE = 10;
 const mediaPreloadMap = {
   sensus: {
     get times() { const sc=window._workSchedules || {}; return [...(sc.sensus || ['07:30','16:00']),...(sc.sensusFriday || ['07:30','16:30'])]; },
-    src: "sensusekonomi.mp4",
+    src: null,
     el: null
   },
   indonesiaRaya: {
     get times() { const sc=window._workSchedules || {}; return sc.irManual ? (sc.ir || ['10:00']) : ['10:00']; },
-    src: "indonesia_raya_edit_benteng_720.mp4",
+    src: null,
     el: null
   },
   azan: {
@@ -2767,7 +2767,7 @@ const mediaPreloadMap = {
     const jadwal = window._jadwalAzan || {};
     return Object.values(jadwal).map(t => t.trim().substring(0, 5)).filter(Boolean);
   },
-  src: "azan.mp3",
+  src: null,
   el: null
 }
 };
@@ -2787,7 +2787,7 @@ function getCurrentMinutes() {
 
 function preloadMedia(key) {
   const media = mediaPreloadMap[key];
-  if (media.el) return;
+  if (!media || !media.src || media.el) return;
 
   const isVideo = key !== 'azan';
   const el = document.createElement(isVideo ? 'video' : 'audio');
@@ -3865,7 +3865,13 @@ setInterval(pushStatus, 10000);
 
 if (REMOTE_SYNC_ENABLED && ctlAuth) {
   onAuthStateChanged(ctlAuth, user => {
-    if (user) startControl();
+    if (user) {
+      startControl();
+      // Retry protected Storage downloads after authentication, once the initial attempt finishes.
+      Promise.resolve(window._initialMediaLoad).then(() => {
+        if (!window._mediaUrls?.azan || !window._mediaUrls?.sensus || !window._mediaUrls?.indonesiaRaya) return loadMediaFromStorage();
+      }).catch(error => console.warn('[MEDIA]', error.message));
+    }
     else signInAnonymously(ctlAuth).catch(e => console.warn('⚠️ [CONTROL AUTH]', e.code));
   });
 }
@@ -4010,7 +4016,8 @@ async function loadMediaFromStorage() {
     window._mediaUrls = { azan: null, sensus: null, indonesiaRaya: null };
     return;
   }
-  const old = Object.values(window._mediaUrls || {});
+  const previous = window._mediaUrls || {};
+  const old = Object.values(previous);
 
   const [azanUrl, sensusUrl, irUrl] = await Promise.all([
     fetchAndCacheMedia('azan', STORAGE_PATHS.azan),
@@ -4018,7 +4025,7 @@ async function loadMediaFromStorage() {
     fetchAndCacheMedia('indonesiaRaya', STORAGE_PATHS.indonesiaRaya),
   ]);
 
-  window._mediaUrls = { azan: azanUrl, sensus: sensusUrl, indonesiaRaya: irUrl };
+  window._mediaUrls = { azan: azanUrl || previous.azan || null, sensus: sensusUrl || previous.sensus || null, indonesiaRaya: irUrl || previous.indonesiaRaya || null };
 
   const audioEl = document.getElementById('popupAudio');
   if (audioEl && azanUrl) { audioEl.src = azanUrl; audioEl.load(); }
@@ -4037,10 +4044,11 @@ async function loadMediaFromStorage() {
     Object.values(m).forEach(x => { x.el?.remove(); x.el = null; });
   }
 
-  setTimeout(() => old.forEach(u => u && URL.revokeObjectURL(u)), 5000);
+  const retained = new Set(Object.values(window._mediaUrls));
+  setTimeout(() => old.forEach(u => { if(u && !retained.has(u)) URL.revokeObjectURL(u); }), 5000);
 }
 
-loadMediaFromStorage();
+window._initialMediaLoad = loadMediaFromStorage();
 
 setInterval(() => {
   const busy = document.querySelector(
