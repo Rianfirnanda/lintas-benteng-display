@@ -907,6 +907,22 @@ button,input,select,textarea { font:inherit; }
 #tracking-map .tracking-popup span { color:#506578 !important; margin-top:4px; }
 </style>
 <script>window.escapeDisplayText = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));</script>
+<script>
+// Firestore does not accept arrays as direct children of other arrays.
+window.encodeDisplayData = value => {
+  if(Array.isArray(value)) return value.map(v=>Array.isArray(v)?{__lbArrayV1:encodeDisplayData(v)}:encodeDisplayData(v));
+  if(value && typeof value==='object') return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).map(([k,v])=>[k,encodeDisplayData(v)]));
+  return value===undefined ? null : value;
+};
+window.decodeDisplayData = value => {
+  if(Array.isArray(value))return value.map(decodeDisplayData);
+  if(value && typeof value==='object'){
+    if(Object.keys(value).length===1 && Array.isArray(value.__lbArrayV1))return decodeDisplayData(value.__lbArrayV1);
+    return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,decodeDisplayData(v)]));
+  }
+  return value;
+};
+</script>
 </head>
 <body class="text-white h-screen w-screen overflow-hidden flex flex-col">
 
@@ -1711,7 +1727,7 @@ const videoIR = document.getElementById("videoIndonesiaRayaPlayer");
 const loadingOverlayIR = document.getElementById("loadingOverlayIR");
 
 const jadwalSensus        = ["07:30", "16:00"];
-const jadwalIndonesiaRaya = ["07:30", "16:00"];
+const jadwalIndonesiaRaya = ["10:00"];
 
 let sudahPopupHariIni = {};
 
@@ -2045,25 +2061,33 @@ function workSlot(date = new Date()) {
   const time = `${parts.hour}:${parts.minute}`;
   return {day:`${parts.year}-${parts.month}-${parts.day}`, time, due: !['Sat','Sun'].includes(parts.weekday) && (time === '07:30' || time === (parts.weekday === 'Fri' ? '16:30' : '16:00'))};
 }
-let workQueue = [];
-function nextWorkSong() {
-  const next = workQueue.shift();
-  if (next) next();
+window._workSchedules = {ir:['10:00'],irManual:true,sensus:['07:30','16:00'],sensusFriday:['07:30','16:30']};
+function mediaDue(date = new Date(), schedules = window._workSchedules) {
+  const slot = workSlot(date);
+  const weekday = new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jakarta',weekday:'short'}).format(date);
+  const ir = schedules.irManual ? (schedules.ir || ['10:00']) : ['10:00'];
+  const sensus = weekday === 'Fri' ? (schedules.sensusFriday || ['07:30','16:30']) : (schedules.sensus || ['07:30','16:00']);
+  return { ...slot, ir: ir.includes(slot.time), sensus: !['Sat','Sun'].includes(weekday) && sensus.includes(slot.time) };
 }
-[video, videoIR].forEach(el => {
-  el.addEventListener('ended', nextWorkSong);
-  el.addEventListener('error', nextWorkSong);
-});
+let workQueue = [], workSongElement = null;
+function nextWorkSong() {
+  const next = workQueue.shift(); workSongElement = next?.element || null;
+  if (next) next.play();
+}
+[video,videoIR].forEach(el=>['ended','error'].forEach(event=>el.addEventListener(event,()=>{if(workSongElement===el)nextWorkSong();})));
 function checkJadwal() {
-  const slot = workSlot();
-  if (!slot.due || !(window._autoOn?.ir || window._autoOn?.sensus)) return;
-  const key = 'lb-work-' + slot.day + '-' + slot.time;
-  if (localStorage.getItem(key)) return;
-  localStorage.setItem(key, 'played');
-  workQueue = [];
-  if (window._autoOn.ir) workQueue.push(showIndonesiaRayaPopup);
-  if (window._autoOn.sensus) workQueue.push(showVideoPopup);
-  nextWorkSong();
+  const slot = mediaDue();
+  for (const [kind,enabled,element,play] of [['ir',window._autoOn?.ir,videoIR,showIndonesiaRayaPopup],['sensus',window._autoOn?.sensus,video,showVideoPopup]]) {
+    if(!enabled || !slot[kind])continue;
+    const key=`lb-work-${kind}-${slot.day}-${slot.time}`;
+    let done = window._playedWorkSlots?.has(key);
+    try { done ||= !!localStorage.getItem(key); } catch {}
+    if(done)continue;
+    (window._playedWorkSlots ||= new Set()).add(key);
+    try {localStorage.setItem(key,'played');}catch{}
+    workQueue.push({element,play});
+  }
+  if(!workSongElement)nextWorkSong();
 }
 
 setInterval(checkJadwal, 30000);
@@ -2729,12 +2753,12 @@ const PRELOAD_MINUTES_BEFORE = 10;
 
 const mediaPreloadMap = {
   sensus: {
-    times: ['07:30', '16:00', '16:30'],
+    get times() { const sc=window._workSchedules || {}; return [...(sc.sensus || ['07:30','16:00']),...(sc.sensusFriday || ['07:30','16:30'])]; },
     src: "sensusekonomi.mp4",
     el: null
   },
   indonesiaRaya: {
-    times: ['07:30', '16:00', '16:30'],
+    get times() { const sc=window._workSchedules || {}; return sc.irManual ? (sc.ir || ['10:00']) : ['10:00']; },
     src: "indonesia_raya_edit_benteng_720.mp4",
     el: null
   },
@@ -3042,7 +3066,7 @@ function applyAudioControlState(ac) {
     else if (ac.triggerMedia === 'ir' && typeof showIndonesiaRayaPopup === 'function') showIndonesiaRayaPopup();
     else if (ac.triggerMedia === 'sensus' && typeof showVideoPopup === 'function') showVideoPopup();
     else if (ac.triggerMedia === 'stop') {
-      if (typeof workQueue !== 'undefined') workQueue = [];
+      if (typeof workQueue !== 'undefined') { workQueue = []; workSongElement = null; }
       if (typeof closeVideoPopup === 'function') closeVideoPopup();
       if (typeof closeIndonesiaRayaPopup === 'function') closeIndonesiaRayaPopup();
       if (typeof hideAzanPopup === 'function') hideAzanPopup();
@@ -3392,11 +3416,12 @@ function applyFullDisplayConfig(cfg) {
     fetchJadwalSholat(-3.763,102.400).then(t=>{tampilkanJadwal(t);setTimingsAzan(t);window._jadwalAzan=t;});
   }
   if (cfg.schedules) {
+    window._workSchedules = cfg.schedules;
     if (Array.isArray(cfg.schedules.sensus) && typeof jadwalSensus !== 'undefined') {
       jadwalSensus.length = 0;
       cfg.schedules.sensus.forEach(t => jadwalSensus.push(t));
     }
-    if (Array.isArray(cfg.schedules.ir) && typeof jadwalIndonesiaRaya !== 'undefined') {
+    if (cfg.schedules.irManual && Array.isArray(cfg.schedules.ir) && typeof jadwalIndonesiaRaya !== 'undefined') {
       jadwalIndonesiaRaya.length = 0;
       cfg.schedules.ir.forEach(t => jadwalIndonesiaRaya.push(t));
     }
@@ -3830,7 +3855,7 @@ function startControl() {
   }
   if (ctlStarted) return;
   ctlStarted = true;
-  onSnapshot(ctlMainRef, snap => applyControl(snap.data()),
+  onSnapshot(ctlMainRef, snap => applyControl(decodeDisplayData(snap.data())),
     err => { console.warn('⚠️ [CONTROL]', err.code); ctlStarted = false; });
   pushStatus();
 }

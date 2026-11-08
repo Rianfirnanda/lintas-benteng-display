@@ -313,6 +313,25 @@
  .quake-table-wrap { max-width:100%; overflow:auto; }
 }
 </style>
+<script>
+// Firestore does not accept arrays as direct children of other arrays.
+window.encodeDisplayData = value => {
+  if(Array.isArray(value)) return value.map(v=>Array.isArray(v)?{__lbArrayV1:encodeDisplayData(v)}:encodeDisplayData(v));
+  if(value && typeof value==='object') return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).map(([k,v])=>[k,encodeDisplayData(v)]));
+  return value===undefined ? null : value;
+};
+window.decodeDisplayData = value => {
+  if(Array.isArray(value))return value.map(decodeDisplayData);
+  if(value && typeof value==='object'){
+    if(Object.keys(value).length===1 && Array.isArray(value.__lbArrayV1))return decodeDisplayData(value.__lbArrayV1);
+    return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,decodeDisplayData(v)]));
+  }
+  return value;
+};
+</script>
+<style>
+.field input[type="checkbox"],.eoq-form input[type="checkbox"] { width:18px; height:18px; min-height:18px; padding:0; flex:0 0 18px; accent-color:var(--blue); }
+</style>
 </head>
 <body>
 
@@ -794,14 +813,15 @@
             </div>
 
             <!-- PANE 5: JADWAL SHOLAT & VIDEO OTOMATIS -->
-            <div class="pk-pane" id="pane-schedules"><p class="hint" style="margin-bottom:20px">Indonesia Raya dilanjutkan SE 2026 saat masuk 07.30 dan pulang 16.00 (Jumat 16.30), zona WIB. Sabtu–Minggu tidak diputar. Aktifkan jadwal dan izinkan audio pada layar display. Azan memakai jadwal harian Kabupaten Bengkulu Tengah.</p>
+            <div class="pk-pane" id="pane-schedules"><p class="hint" style="margin-bottom:20px">Indonesia Raya diputar setiap hari pukul 10.00 WIB secara bawaan. Jamnya dapat diubah di bawah. SE 2026 memiliki jadwal terpisah pada hari kerja. Aktifkan jadwal dan izinkan audio pada layar display. Azan memakai jadwal harian Kabupaten Bengkulu Tengah.</p>
                 <div class="eoq-form">
-                    <label class="field">SE 2026 · Senin–Jumat, WIB
-                        <input type="text" id="cfg-sched-sensus" readonly value="07:30, 16:00 (Jumat 16:30)" placeholder="07:30, 16:00 (Jumat 16:30)">
+                    <label class="field">SE 2026 · Senin–Kamis, WIB (pisahkan dengan koma)
+                        <input type="text" id="cfg-sched-sensus" value="07:30, 16:00" placeholder="07:30, 16:00">
                     </label>
-                    <label class="field">Indonesia Raya · Senin–Jumat, WIB
-                        <input type="text" id="cfg-sched-ir" value="07:30, 16:00 (Jumat 16:30)" readonly>
+                    <label class="field">Indonesia Raya · Setiap hari, WIB
+                        <input type="time" id="cfg-sched-ir" value="10:00" required>
                     </label>
+                    <label class="field">SE 2026 · Jumat, WIB (pisahkan dengan koma)<input type="text" id="cfg-sched-sensus-friday" value="07:30, 16:30" placeholder="07:30, 16:30"></label>
                     <label class="field full">
                         <span style="display:inline-flex;align-items:center;gap:8px;">
                             <input type="checkbox" id="cfg-sholat-manual"> Gunakan Jam Jadwal Sholat Manual (Override API Kemenag)
@@ -994,7 +1014,7 @@
     async function writeMain(patch, okMsg, target = feedback) {
         try { bc?.postMessage({ type: 'full-sync', patch, ts: Date.now() }); } catch (e) {}
         try {
-            await setDoc(mainRef, { ...patch, updatedAt: Date.now() }, { merge: true });
+            await setDoc(mainRef, encodeDisplayData({ ...patch, updatedAt: Date.now() }), { merge: true });
             if (target) target.textContent = okMsg;
         } catch (e) {
             console.error(e);
@@ -1067,7 +1087,7 @@
         if (listenersStarted) return;
         listenersStarted = true;
         onSnapshot(mainRef, snap => {
-            const d = snap.data() || {};
+            const d = decodeDisplayData(snap.data()) || {};
             if (d.displayConfig) {
                 displayConfig = { ...defaultDisplayConfig, ...displayConfig, ...d.displayConfig };
                 if (!document.querySelector('.content')?.contains(document.activeElement)) {
@@ -1223,7 +1243,9 @@
         ],
         schedules: {
             sensus: ['07:30', '16:00'],
-            ir: ['07:30', '16:00'],
+            ir: ['10:00'],
+            irManual: true,
+            sensusFriday: ['07:30', '16:30'],
             manualSholat: false,
             sholatTimes: { Fajr: '04:40', Dhuhr: '12:04', Asr: '15:22', Maghrib: '18:06', Isha: '19:16' }
         },
@@ -1923,8 +1945,9 @@
         if ($('cfg-ticker-speed')) $('cfg-ticker-speed').value = tk.speedSec || 240;
 
         const sc = displayConfig.schedules || defaultDisplayConfig.schedules;
-        if ($('cfg-sched-sensus')) $('cfg-sched-sensus').value = '07:30, 16:00 (Jumat 16:30)';
-        if ($('cfg-sched-ir')) $('cfg-sched-ir').value = '07:30, 16:00 (Jumat 16:30)';
+        if ($('cfg-sched-sensus')) $('cfg-sched-sensus').value = (sc.sensus || ['07:30','16:00']).join(', ');
+        if ($('cfg-sched-sensus-friday')) $('cfg-sched-sensus-friday').value = (sc.sensusFriday || ['07:30','16:30']).join(', ');
+        if ($('cfg-sched-ir')) $('cfg-sched-ir').value = sc.irManual && sc.ir?.length ? sc.ir[0] : '10:00';
         if ($('cfg-sholat-manual')) $('cfg-sholat-manual').checked = !!sc.manualSholat;
         if (sc.sholatTimes) {
             if ($('cfg-sh-fajr')) $('cfg-sh-fajr').value = sc.sholatTimes.Fajr || '04:40';
@@ -2102,9 +2125,15 @@
     });
 
     $('btn-save-schedules')?.addEventListener('click', () => {
+        const parseTimes = text => [...new Set(text.split(',').map(t=>t.trim()).filter(Boolean))];
+        const sensus = parseTimes($('cfg-sched-sensus').value), friday = parseTimes($('cfg-sched-sensus-friday').value), ir = $('cfg-sched-ir').value;
+        const valid = t => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+        if (!sensus.length || !friday.length || ![...sensus,...friday,ir].every(valid)) { $('cust-feedback').textContent='Masukkan jam valid dalam format HH:mm, contoh 07:30, 16:00.'; return; }
         displayConfig.schedules = {
-            sensus: ['07:30', '16:00'],
-            ir: ['07:30', '16:00'],
+            sensus,
+            ir: [ir],
+            irManual: true,
+            sensusFriday: friday,
             manualSholat: $('cfg-sholat-manual').checked,
             sholatTimes: {
                 Fajr: $('cfg-sh-fajr').value || '04:40',
